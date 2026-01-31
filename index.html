@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workout OS v12.1</title>
+    <title>Workout OS v12.2</title>
     <style>
         :root { --primary: #3b82f6; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #22c55e; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
         .nav { display: flex; justify-content: space-around; background: var(--card); padding: 15px; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #334155; }
-        .nav button { background: none; border: none; color: #94a3b8; font-weight: 600; cursor: pointer; padding: 10px; font-size: 1rem; }
+        .nav button { background: none; border: none; color: #94a3b8; font-weight: 600; cursor: pointer; padding: 10px; }
         .nav button.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
         .container { padding: 20px; max-width: 600px; margin: 0 auto; padding-bottom: 140px; }
         .view { display: none; }
@@ -17,51 +17,35 @@
         .selector-btns { display: flex; gap: 10px; margin-bottom: 20px; }
         .sel-btn { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--primary); background: transparent; color: white; cursor: pointer; font-weight: bold; }
         .sel-btn.active { background: var(--primary); }
-        .set-tracker { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
-        .set-dot { width: 42px; height: 42px; border-radius: 50%; border: 2px solid #475569; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; background: #1e293b; }
+        .set-dot { width: 42px; height: 42px; border-radius: 50%; border: 2px solid #475569; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; background: #1e293b; margin: 5px; }
         .set-dot.active { background: var(--accent); border-color: var(--accent); color: white; }
-        #timer-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #1e293b; border-top: 4px solid var(--primary); padding: 15px; display: none; z-index: 1000; box-shadow: 0 -5px 15px rgba(0,0,0,0.5); }
-        #timer-display { font-size: 2.2rem; font-weight: bold; color: var(--primary); font-family: monospace; }
-        .btn-save { background: #22c55e; color: white; border: none; padding: 18px; border-radius: 10px; width: 100%; margin-top: 15px; cursor: pointer; font-weight: bold; font-size: 1rem; }
-        .edit-input { width: 100%; background: #0f172a; border: 1px solid #475569; color: white; padding: 10px; border-radius: 6px; margin-bottom: 8px; box-sizing: border-box; }
+        #timer-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #1e293b; border-top: 4px solid var(--primary); padding: 15px; display: none; z-index: 1000; }
+        #timer-display { font-size: 2.2rem; font-weight: bold; color: var(--primary); font-family: monospace; text-align: center; flex-grow: 1; }
     </style>
 </head>
 <body>
 
 <div id="timer-bar">
     <div style="display: flex; justify-content: space-between; align-items: center; max-width: 600px; margin: 0 auto;">
-        <span style="font-weight:bold">DESCANSO</span>
-        <div id="timer-display">00:00</div>
-        <button onclick="stopTimer()" style="background:#ef4444; border:none; color:white; padding:10px 15px; border-radius:8px; font-weight:bold">PULAR</button>
+        <span>REST</span>
+        <div id="timer-display">01:00</div>
+        <button onclick="stopTimer()" style="background:#ef4444; color:white; border:none; padding:10px; border-radius:8px;">SKIP</button>
     </div>
 </div>
 
 <div class="nav">
     <button onclick="showView('today')" id="nav-today" class="active">TREINAR</button>
-    <button onclick="showView('edit')" id="nav-edit">EDITAR</button>
     <button onclick="showView('history')" id="nav-history">HISTÓRICO</button>
 </div>
 
 <div class="container">
     <div id="view-today" class="view active">
         <div class="selector-btns">
-            <button class="sel-btn" id="btn-lower" onclick="setWorkoutType('lower')">LOWER</button>
-            <button class="sel-btn" id="btn-upper" onclick="setWorkoutType('upper')">UPPER</button>
+            <button class="sel-btn active" id="btn-lower" onclick="renderToday('lower')">LOWER</button>
+            <button class="sel-btn" id="btn-upper" onclick="renderToday('upper')">UPPER</button>
         </div>
         <div id="todayList"></div>
-        <button class="btn-save" onclick="finishWorkout()">FINALIZAR E ENVIAR</button>
-    </div>
-
-    <div id="view-edit" class="view">
-        <div class="card">
-            <label style="font-size:0.8rem; color:#94a3b8">TEMPO DE DESCANSO (SEGUNDOS)</label>
-            <input type="number" id="globalTimer" class="edit-input" onchange="updateTimerSetting(this.value)">
-        </div>
-        <h3 style="color:var(--primary)">LOWER BODY</h3>
-        <div id="edit-lower-list"></div>
-        <h3 style="color:var(--primary); margin-top:30px">UPPER BODY</h3>
-        <div id="edit-upper-list"></div>
-        <button class="btn-save" style="background:var(--primary)" onclick="saveAllRoutines()">SALVAR ALTERAÇÕES</button>
+        <button onclick="finishWorkout()" style="background:#22c55e; color:white; border:none; padding:18px; border-radius:10px; width:100%; font-weight:bold; margin-top:20px;">FINALIZAR E ENVIAR</button>
     </div>
 
     <div id="view-history" class="view">
@@ -70,151 +54,76 @@
 </div>
 
 <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9_mrQMR0i7u17NYK0Rc4ZBEoTwibNkNg0XT0mdPPFj5GegCEGyT-eDE1b0Ao3NB09/exec";
+    const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbw9_mrQMR0i7u17NYK0Rc4ZBEoTwibNkNg0XT0mdPPFj5GegCEGyT-eDE1b0Ao3NB09/exec";
 
-    let state = JSON.parse(localStorage.getItem('workoutAppState')) || {
-        routines: {
-            lower: Array(8).fill().map(() => ({ n: "", s: "3", r: "12" })),
-            upper: Array(8).fill().map(() => ({ n: "", s: "3", r: "12" }))
-        },
-        currentSelection: 'lower',
-        settings: { restTime: 60 },
-        history: [],
-        completedSets: {} 
+    // EXERCÍCIOS JÁ CADASTRADOS NO CÓDIGO (Não apagam mais!)
+    const myRoutines = {
+        lower: [
+            { n: "Shrimp Squat", s: 3, r: "10-12" },
+            { n: "Nordic Curls", s: 3, r: "8-10" },
+            { n: "Bulgarian Split Squat", s: 3, r: "12" }
+        ],
+        upper: [
+            { n: "Towel Curls", s: 3, r: "15" },
+            { n: "Push Ups", s: 3, r: "MAX" },
+            { n: "Dips", s: 3, r: "10" }
+        ]
     };
 
+    let completedSets = {};
     let timerInterval;
 
-    function initEditFields() {
-        const createFields = (type) => state.routines[type].map((ex, i) => `
-            <div class="card">
-                <input type="text" placeholder="Exercício ${i+1}" value="${ex.n}" class="edit-input" onchange="updateExerciseData('${type}', ${i}, 'n', this.value)">
-                <div style="display:flex; gap:10px">
-                    <input type="number" placeholder="Séries" value="${ex.s}" class="edit-input" onchange="updateExerciseData('${type}', ${i}, 's', this.value)">
-                    <input type="text" placeholder="Reps" value="${ex.r}" class="edit-input" onchange="updateExerciseData('${type}', ${i}, 'r', this.value)">
-                </div>
-            </div>`).join('');
-
-        document.getElementById('edit-lower-list').innerHTML = createFields('lower');
-        document.getElementById('edit-upper-list').innerHTML = createFields('upper');
-        document.getElementById('globalTimer').value = state.settings.restTime;
-    }
-
-    function updateExerciseData(type, index, field, value) {
-        state.routines[type][index][field] = value;
-    }
-
-    function setWorkoutType(type) {
-        state.currentSelection = type;
+    function renderToday(type) {
         document.querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('btn-' + type).classList.add('active');
-        save();
-        renderToday();
-    }
-
-    function renderToday() {
-        const type = state.currentSelection;
+        
         const container = document.getElementById('todayList');
-        document.querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('btn-' + type).classList.add('active');
-        
-        const filtered = state.routines[type].filter(ex => ex.n && ex.n.trim() !== "");
-        
-        if (filtered.length === 0) {
-            container.innerHTML = '<p style="text-align:center; color:#94a3b8">Nenhum exercício salvo. Vá em EDITAR para configurar.</p>';
-            return;
-        }
-
-        container.innerHTML = filtered.map((ex) => {
-            const numSets = parseInt(ex.s) || 1;
-            if (!state.completedSets[ex.n]) state.completedSets[ex.n] = Array(numSets).fill(false);
-            
+        container.innerHTML = myRoutines[type].map(ex => {
+            if (!completedSets[ex.n]) completedSets[ex.n] = Array(ex.s).fill(false);
             return `
             <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center">
-                    <strong>${ex.n}</strong>
-                    <span style="color:#94a3b8; font-size:0.9rem">${ex.r}</span>
-                </div>
-                <div class="set-tracker">
-                    ${state.completedSets[ex.n].slice(0, numSets).map((done, setIdx) => `
-                        <div class="set-dot ${done ? 'active' : ''}" onclick="toggleSet('${ex.n}', ${setIdx})">
-                            ${setIdx + 1}
-                        </div>
+                <div style="display:flex; justify-content:space-between"><strong>${ex.n}</strong> <span>${ex.r}</span></div>
+                <div style="display:flex; flex-wrap:wrap; margin-top:10px">
+                    ${completedSets[ex.n].map((done, i) => `
+                        <div class="set-dot ${done ? 'active' : ''}" onclick="toggleSet('${ex.n}', ${i})">${i+1}</div>
                     `).join('')}
                 </div>
             </div>`;
         }).join('');
     }
 
-    function toggleSet(exName, setIdx) {
-        const isDone = state.completedSets[exName][setIdx];
-        state.completedSets[exName][setIdx] = !isDone;
-        if (!isDone) startTimer(state.settings.restTime || 60);
-        save();
-        renderToday();
+    function toggleSet(name, i) {
+        completedSets[name][i] = !completedSets[name][i];
+        if (completedSets[name][i]) startTimer(60);
+        renderToday(document.querySelector('.sel-btn.active').id.replace('btn-',''));
     }
 
     function startTimer(sec) {
         clearInterval(timerInterval);
         document.getElementById('timer-bar').style.display = 'block';
-        const run = () => {
-            const m = Math.floor(sec/60), s = sec%60;
-            document.getElementById('timer-display').innerText = `${m}:${s < 10 ? '0'+s : s}`;
-            if (sec <= 0) { stopTimer(); try { new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play(); } catch(e){} }
+        timerInterval = setInterval(() => {
             sec--;
-        };
-        run();
-        timerInterval = setInterval(run, 1000);
+            let m = Math.floor(sec/60), s = sec%60;
+            document.getElementById('timer-display').innerText = `${m}:${s < 10 ? '0'+s : s}`;
+            if (sec <= 0) stopTimer();
+        }, 1000);
     }
 
     function stopTimer() { clearInterval(timerInterval); document.getElementById('timer-bar').style.display = 'none'; }
 
     async function finishWorkout() {
-        const btn = document.querySelector('.btn-save');
-        btn.innerText = "A ENVIAR...";
-        const logs = [];
-        for (let n in state.completedSets) {
-            const done = state.completedSets[n].filter(s => s).length;
-            if (done > 0) logs.push(`${n}: ${done} séries`);
-        }
-        if (logs.length === 0) { alert("Faça pelo menos uma série!"); btn.innerText = "FINALIZAR E ENVIAR"; return; }
-        
-        const data = { type: state.currentSelection.toUpperCase(), exercises: logs, date: new Date().toLocaleString() };
-        try {
-            await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
-            state.history.push(data);
-            state.completedSets = {};
-            save();
-            alert("Treino enviado!");
-            showView('history');
-        } catch(e) { alert("Erro de rede."); }
-        btn.innerText = "FINALIZAR E ENVIAR";
+        const logs = Object.keys(completedSets).map(n => `${n}: ${completedSets[n].filter(s => s).length} sets`);
+        await fetch(GOOGLE_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ exercises: logs, type: "WORKOUT" }) });
+        alert("Enviado!");
+        location.reload();
     }
 
     function showView(v) {
         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.nav button').forEach(el => el.classList.remove('active'));
         document.getElementById('view-'+v).classList.add('active');
-        document.getElementById('nav-'+v).classList.add('active');
-        if(v === 'edit') initEditFields();
-        if(v === 'today') renderToday();
-        if(v === 'history') renderHistory();
     }
 
-    function updateTimerSetting(v) { state.settings.restTime = parseInt(v) || 60; save(); }
-    function saveAllRoutines() { save(); alert("Gravado com sucesso!"); showView('today'); }
-    function save() { localStorage.setItem('workoutAppState', JSON.stringify(state)); }
-    
-    function renderHistory() {
-        const container = document.getElementById('historyList');
-        if (state.history.length === 0) { container.innerHTML = '<p style="text-align:center">Sem histórico.</p>'; return; }
-        container.innerHTML = state.history.slice().reverse().map(h => `
-            <div class="card"><small>${h.date}</small><br><strong>${h.type}</strong><br>${h.exercises.join(', ')}</div>
-        `).join('');
-    }
-
-    initEditFields();
-    renderToday();
+    renderToday('lower');
 </script>
 </body>
 </html>

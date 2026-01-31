@@ -3,127 +3,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workout OS v12.2</title>
+    <title>Workout OS v13.1</title>
     <style>
         :root { --primary: #3b82f6; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #22c55e; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
         .nav { display: flex; justify-content: space-around; background: var(--card); padding: 15px; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #334155; }
-        .nav button { background: none; border: none; color: #94a3b8; font-weight: 600; cursor: pointer; padding: 10px; }
+        .nav button { background: none; border: none; color: #94a3b8; font-weight: 600; cursor: pointer; padding: 10px; font-size: 1rem; }
         .nav button.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
         .container { padding: 20px; max-width: 600px; margin: 0 auto; padding-bottom: 140px; }
         .view { display: none; }
         .view.active { display: block; }
         .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #334155; }
-        .selector-btns { display: flex; gap: 10px; margin-bottom: 20px; }
-        .sel-btn { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--primary); background: transparent; color: white; cursor: pointer; font-weight: bold; }
+        .selector-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .sel-btn { padding: 12px; border-radius: 8px; border: 1px solid var(--primary); background: transparent; color: white; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
         .sel-btn.active { background: var(--primary); }
         .set-dot { width: 42px; height: 42px; border-radius: 50%; border: 2px solid #475569; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; background: #1e293b; margin: 5px; }
         .set-dot.active { background: var(--accent); border-color: var(--accent); color: white; }
         #timer-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #1e293b; border-top: 4px solid var(--primary); padding: 15px; display: none; z-index: 1000; }
-        #timer-display { font-size: 2.2rem; font-weight: bold; color: var(--primary); font-family: monospace; text-align: center; flex-grow: 1; }
+        #timer-display { font-size: 2.2rem; font-weight: bold; color: var(--primary); font-family: monospace; text-align: center; }
+        .edit-input { width: 100%; background: #0f172a; border: 1px solid #475569; color: white; padding: 10px; border-radius: 6px; margin-bottom: 8px; box-sizing: border-box; }
+        .btn-save { background: #22c55e; color: white; border: none; padding: 18px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: bold; font-size: 1rem; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <div id="timer-bar">
     <div style="display: flex; justify-content: space-between; align-items: center; max-width: 600px; margin: 0 auto;">
-        <span>REST</span>
+        <span>DESCANSO</span>
         <div id="timer-display">01:00</div>
-        <button onclick="stopTimer()" style="background:#ef4444; color:white; border:none; padding:10px; border-radius:8px;">SKIP</button>
+        <button onclick="stopTimer()" style="background:#ef4444; color:white; border:none; padding:10px; border-radius:8px;">PULAR</button>
     </div>
 </div>
 
 <div class="nav">
     <button onclick="showView('today')" id="nav-today" class="active">TREINAR</button>
-    <button onclick="showView('history')" id="nav-history">HISTÓRICO</button>
+    <button onclick="showView('edit')" id="nav-edit">EDITAR</button>
 </div>
 
 <div class="container">
     <div id="view-today" class="view active">
         <div class="selector-btns">
-            <button class="sel-btn active" id="btn-lower" onclick="renderToday('lower')">LOWER</button>
-            <button class="sel-btn" id="btn-upper" onclick="renderToday('upper')">UPPER</button>
+            <button class="sel-btn active" id="btn-legs-s" onclick="setWorkoutType('legs_s')">LEGS (STR)</button>
+            <button class="sel-btn" id="btn-push" onclick="setWorkoutType('push')">PUSH</button>
+            <button class="sel-btn" id="btn-legs-p" onclick="setWorkoutType('legs_p')">LEGS (PLYO)</button>
+            <button class="sel-btn" id="btn-pull" onclick="setWorkoutType('pull')">PULL</button>
         </div>
         <div id="todayList"></div>
-        <button onclick="finishWorkout()" style="background:#22c55e; color:white; border:none; padding:18px; border-radius:10px; width:100%; font-weight:bold; margin-top:20px;">FINALIZAR E ENVIAR</button>
+        <button class="btn-save" onclick="finishWorkout()">FINALIZAR E ENVIAR</button>
     </div>
 
-    <div id="view-history" class="view">
-        <div id="historyList"></div>
+    <div id="view-edit" class="view">
+        <div id="edit-lists"></div>
+        <button class="btn-save" style="background:var(--primary)" onclick="saveAll()">SALVAR TUDO</button>
     </div>
 </div>
 
 <script>
     const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbw9_mrQMR0i7u17NYK0Rc4ZBEoTwibNkNg0XT0mdPPFj5GegCEGyT-eDE1b0Ao3NB09/exec";
 
-    // EXERCÍCIOS JÁ CADASTRADOS NO CÓDIGO (Não apagam mais!)
-    const myRoutines = {
-        lower: [
-            { n: "Shrimp Squat", s: 3, r: "10-12" },
-            { n: "Nordic Curls", s: 3, r: "8-10" },
-            { n: "Bulgarian Split Squat", s: 3, r: "12" }
+    const defaultRoutines = {
+        legs_s: [
+            { n: "Rom Deadlift (5kg)", s: 2, r: "5" },
+            { n: "Step ups (5kg)", s: 2, r: "5" },
+            { n: "Bulg. Split squats (5kg)", s: 2, r: "5" },
+            { n: "Crab lifts (5kg)", s: 2, r: "5" },
+            { n: "Glute bridge (5kg)", s: 2, r: "5" }
         ],
-        upper: [
-            { n: "Towel Curls", s: 3, r: "15" },
-            { n: "Push Ups", s: 3, r: "MAX" },
-            { n: "Dips", s: 3, r: "10" }
+        push: [
+            { n: "Leg ass. Dips", s: 2, r: "5" },
+            { n: "Knee bent pike press ups", s: 2, r: "5" },
+            { n: "Press ups", s: 2, r: "5" },
+            { n: "Frog Holds", s: 2, r: "5" },
+            { n: "L-sits", s: 2, r: "5" }
+        ],
+        legs_p: [
+            { n: "Depth jumps", s: 2, r: "5" },
+            { n: "Broad Jumps", s: 2, r: "5" },
+            { n: "Kneeling jumps", s: 2, r: "5" },
+            { n: "Lunge jumps", s: 2, r: "5" },
+            { n: "Skater Jumps", s: 2, r: "5" }
+        ],
+        pull: [
+            { n: "Leg ass. Pull ups", s: 2, r: "5" },
+            { n: "Skin the cat", s: 2, r: "5" },
+            { n: "Leg ass. Chin ups", s: 2, r: "5" },
+            { n: "Front Lever", s: 2, r: "5" },
+            { n: "Oblique SA G2OH (5kg)", s: 2, r: "5" }
         ]
     };
 
+    let state = JSON.parse(localStorage.getItem('workoutDataV13_1')) || { routines: defaultRoutines, current: 'legs_s' };
     let completedSets = {};
     let timerInterval;
 
-    function renderToday(type) {
-        document.querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('btn-' + type).classList.add('active');
-        
-        const container = document.getElementById('todayList');
-        container.innerHTML = myRoutines[type].map(ex => {
-            if (!completedSets[ex.n]) completedSets[ex.n] = Array(ex.s).fill(false);
-            return `
-            <div class="card">
-                <div style="display:flex; justify-content:space-between"><strong>${ex.n}</strong> <span>${ex.r}</span></div>
-                <div style="display:flex; flex-wrap:wrap; margin-top:10px">
-                    ${completedSets[ex.n].map((done, i) => `
-                        <div class="set-dot ${done ? 'active' : ''}" onclick="toggleSet('${ex.n}', ${i})">${i+1}</div>
-                    `).join('')}
-                </div>
-            </div>`;
-        }).join('');
-    }
-
-    function toggleSet(name, i) {
-        completedSets[name][i] = !completedSets[name][i];
-        if (completedSets[name][i]) startTimer(60);
-        renderToday(document.querySelector('.sel-btn.active').id.replace('btn-',''));
-    }
-
-    function startTimer(sec) {
-        clearInterval(timerInterval);
-        document.getElementById('timer-bar').style.display = 'block';
-        timerInterval = setInterval(() => {
-            sec--;
-            let m = Math.floor(sec/60), s = sec%60;
-            document.getElementById('timer-display').innerText = `${m}:${s < 10 ? '0'+s : s}`;
-            if (sec <= 0) stopTimer();
-        }, 1000);
-    }
-
-    function stopTimer() { clearInterval(timerInterval); document.getElementById('timer-bar').style.display = 'none'; }
-
-    async function finishWorkout() {
-        const logs = Object.keys(completedSets).map(n => `${n}: ${completedSets[n].filter(s => s).length} sets`);
-        await fetch(GOOGLE_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ exercises: logs, type: "WORKOUT" }) });
-        alert("Enviado!");
-        location.reload();
-    }
-
     function showView(v) {
         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav button').forEach(el => el.classList.remove('active'));
         document.getElementById('view-'+v).classList.add('active');
+        document.getElementById('nav-'+v).classList.add('active');
+        if(v === 'edit') renderEdit();
+        if(v === 'today') renderToday();
     }
 
-    renderToday('lower');
-</script>
-</body>
-</html>
+    function renderEdit() {
+        let html = '';
+        for (let type in state.routines) {
+            html += `<h3 style="color:var(--primary); text-transform:uppercase">${type.replace('_', ' ')}</h3>`;
+            state.routines[type].forEach((ex, i) => {
+                html += `
+                <div class="card">
+                    <input type="text" value="${ex.n}" class="edit-input" id="n-${type}-${i}">
+                    <div style="display:flex; gap:10px">
+                        <input type="number" value="${ex.s}" class="edit-input" id="s-${type}-${i}">
+                        <input type="text" value="${ex.r}" class="edit-input" id="r-${type}-${i}">
+                    </div>
+                </div>`;
+            });
+        }
+        document.getElementById('edit-lists').innerHTML = html;
+    }
+
+    function saveAll() {
+        for (let type in state.routines) {
+            state.routines[type].forEach((ex, i) => {
+                ex.n = document.getElementById(`n-${type}-${i}`).value;
+                ex.s = parseInt(document.getElementById(`s-${type}-${i}`).value) || 0;
+                ex.n = document.getElementById(`n-${type}-${i}`).value;
+            });
+        }
+        localStorage.setItem('workoutDataV13_1', JSON.stringify(state));
+        alert("Configuração Salva!");
+        showView('today');
+    }
+
+    function setWorkoutType(type) { state.current = type; renderToday(); }
+
+    function renderToday() {
+        const type = state.current;
+        document.querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-' + type.replace('_', '-')).classList.add('active');
+        
+        const container = document.getElementById('todayList');
+        container.innerHTML

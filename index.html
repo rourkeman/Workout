@@ -2,31 +2,33 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workout OS v18 - FORCE RESET</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Workout OS v19</title>
     <style>
         :root { --primary: #3b82f6; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #22c55e; }
-        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
-        .nav { display: flex; justify-content: space-around; background: var(--card); padding: 15px; position: sticky; top: 0; border-bottom: 1px solid #334155; }
-        .nav button { background: none; border: none; color: #94a3b8; font-weight: bold; cursor: pointer; padding: 10px; font-size: 0.8rem; text-transform: uppercase; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; touch-action: manipulation; }
+        .nav { display: flex; justify-content: space-around; background: var(--card); padding: 10px; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #334155; }
+        .nav button { background: none; border: none; color: #94a3b8; font-weight: bold; cursor: pointer; padding: 10px; font-size: 0.75rem; text-transform: uppercase; }
         .nav button.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
-        .container { padding: 20px; max-width: 600px; margin: 0 auto; }
+        .container { padding: 15px; max-width: 600px; margin: 0 auto; padding-bottom: 120px; }
         .view { display: none; }
         .view.active { display: block; }
         .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #334155; }
-        .selector-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .sel-btn { padding: 20px; border-radius: 8px; border: 2px solid var(--primary); background: #1e293b; color: white; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
-        .set-dot { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #475569; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; background: #1e293b; margin: 5px; display: inline-flex; }
+        .selector-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+        .sel-btn { padding: 15px; border-radius: 8px; border: 2px solid var(--primary); background: #1e293b; color: white; cursor: pointer; font-weight: bold; font-size: 0.7rem; }
+        .sel-btn.active { background: var(--primary); }
+        .set-dot { width: 48px; height: 48px; border-radius: 50%; border: 2px solid #475569; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; background: #1e293b; margin: 5px; -webkit-tap-highlight-color: transparent; }
         .set-dot.active { background: var(--accent); border-color: var(--accent); color: white; }
-        .btn-action { background: var(--accent); color: white; border: none; padding: 18px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        #timer-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #1e293b; border-top: 4px solid var(--primary); padding: 15px; display: none; text-align: center; }
+        .edit-input { width: 100%; background: #0f172a; border: 1px solid #475569; color: white; padding: 10px; border-radius: 6px; margin: 5px 0; box-sizing: border-box; font-size: 0.9rem; }
+        .btn-action { background: var(--accent); color: white; border: none; padding: 18px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: bold; font-size: 1rem; margin-top: 10px; }
+        #timer-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #1e293b; border-top: 4px solid var(--primary); padding: 15px; display: none; z-index: 2000; text-align: center; }
     </style>
 </head>
 <body>
 
 <div id="timer-bar">
-    <span id="timer-display" style="font-size: 2rem; font-weight: bold; color: var(--primary);">01:00</span>
-    <button onclick="stopTimer()" style="background:red; color:white; border:none; padding:10px; border-radius:5px; margin-left:20px;">SKIP</button>
+    <div id="timer-display" style="font-size: 2.2rem; font-weight: bold; color: var(--primary); font-family: monospace;">00:00</div>
+    <button onclick="stopTimer()" style="background:#ef4444; color:white; border:none; padding:8px 20px; border-radius:8px; margin-top:5px; font-weight:bold;">PULAR DESCANSO</button>
 </div>
 
 <div class="nav">
@@ -44,58 +46,57 @@
             <button class="sel-btn" onclick="setWorkout('legs_p')">LEGS (PLYO)</button>
             <button class="sel-btn" onclick="setWorkout('pull')">PULL</button>
         </div>
-        <div id="todayList"><p style="text-align:center; color:#94a3b8;">Escolha um treino acima.</p></div>
+        <div id="todayList"><p style="text-align:center; color:#94a3b8;">Selecione uma categoria.</p></div>
         <button id="finish-btn" class="btn-action" style="display:none" onclick="finish('TREINO')">FINALIZAR E ENVIAR</button>
     </div>
 
     <div id="view-run" class="view">
         <div class="card">
             <h3>REGISTRAR CORRIDA</h3>
-            <input type="number" step="0.1" id="run-dist" style="width:100%; padding:10px; margin:10px 0;" placeholder="Distância em KM">
+            <input type="number" step="0.1" id="run-dist" class="edit-input" placeholder="KM percorridos">
             <button class="btn-action" onclick="finish('CORRIDA')">SALVAR CORRIDA</button>
         </div>
     </div>
 
     <div id="view-history" class="view">
+        <h3 style="color:var(--primary)">ÚLTIMOS REGISTROS</h3>
         <div id="historyList"></div>
     </div>
 
     <div id="view-edit" class="view">
         <div id="edit-lists"></div>
-        <button class="btn-action" style="background:var(--primary)" onclick="saveAll()">SALVAR ALTERAÇÕES</button>
+        <button class="btn-action" style="background:var(--primary)" onclick="saveAll()">SALVAR TODAS ALTERAÇÕES</button>
     </div>
 </div>
 
 <script>
-    // LIMPEZA DE EMERGÊNCIA: Remove versões antigas que travaram o clique
-    if(!localStorage.getItem('v18_reset')) {
-        localStorage.clear();
-        localStorage.setItem('v18_reset', 'true');
-    }
-
     const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbw9_mrQMR0i7u17NYK0Rc4ZBEoTwibNkNg0XT0mdPPFj5GegCEGyT-eDE1b0Ao3NB09/exec";
     
     const defaultData = {
-        legs_s: [{n:"Rom Deadlift (5kg)",s:2,r:"5"},{n:"Step ups (5kg)",s:2,r:"5"},{n:"Bulg. Split squats (5kg)",s:2,r:"5"},{n:"Crab lifts (5kg)",s:2,r:"5"},{n:"Glute bridge (5kg)",s:2,r:"5"}],
-        push: [{n:"Leg ass. Dips",s:2,r:"5"},{n:"Knee bent pike press ups",s:2,r:"5"},{n:"Press ups",s:2,r:"5"},{n:"Frog Holds",s:2,r:"5"},{n:"L-sits",s:2,r:"5"}],
-        legs_p: [{n:"Depth jumps",s:2,r:"5"},{n:"Broad Jumps",s:2,r:"5"},{n:"Kneeling jumps",s:2,r:"5"},{n:"Lunge jumps",s:2,r:"5"},{n:"Skater Jumps",s:2,r:"5"}],
-        pull: [{n:"Leg ass. Pull ups",s:2,r:"5"},{n:"Skin the cat",s:2,r:"5"},{n:"Leg ass. Chin ups",s:2,r:"5"},{n:"Front Lever",s:2,r:"5"},{n:"Oblique SA G2OH (5kg)",s:2,r:"5"}]
+        legs_s: [{n:"Rom Deadlift",s:2,r:"5",d:60},{n:"Step ups",s:2,r:"5",d:60},{n:"Bulg. Split squats",s:2,r:"5",d:60},{n:"Crab lifts",s:2,r:"5",d:60},{n:"Glute bridge",s:2,r:"5",d:60}],
+        push: [{n:"Leg ass. Dips",s:2,r:"5",d:60},{n:"Knee bent pike press ups",s:2,r:"5",d:60},{n:"Press ups",s:2,r:"5",d:60},{n:"Frog Holds",s:2,r:"5",d:60},{n:"L-sits",s:2,r:"5",d:60}],
+        legs_p: [{n:"Depth jumps",s:2,r:"5",d:60},{n:"Broad Jumps",s:2,r:"5",d:60},{n:"Kneeling jumps",s:2,r:"5",d:60},{n:"Lunge jumps",s:2,r:"5",d:60},{n:"Skater Jumps",s:2,r:"5",d:60}],
+        pull: [{n:"Leg ass. Pull ups",s:2,r:"5",d:60},{n:"Skin the cat",s:2,r:"5",d:60},{n:"Leg ass. Chin ups",s:2,r:"5",d:60},{n:"Front Lever",s:2,r:"5",d:60},{n:"Oblique SA G2OH",s:2,r:"5",d:60}]
     };
 
-    let state = JSON.parse(localStorage.getItem('workoutV18')) || { routines: defaultData, history: [] };
+    let state = JSON.parse(localStorage.getItem('workoutV19')) || { routines: defaultData, history: [] };
     let activeT = null;
     let completed = {};
     let timerInt;
 
     function showView(v) {
         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav button').forEach(el => el.classList.remove('active'));
         document.getElementById('view-'+v).classList.add('active');
+        document.getElementById('nav-'+v).classList.add('active');
         if(v === 'edit') renderEdit();
         if(v === 'history') renderHistory();
     }
 
     function setWorkout(t) {
         activeT = t;
+        document.querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
         document.getElementById('finish-btn').style.display = 'block';
         renderToday();
     }
@@ -105,17 +106,20 @@
         container.innerHTML = state.routines[activeT].map(ex => {
             if (!completed[ex.n]) completed[ex.n] = Array(parseInt(ex.s)).fill(false);
             return `<div class="card">
-                <strong>${ex.n}</strong> (${ex.r} reps)
+                <div style="display:flex; justify-content:space-between; align-items:center">
+                    <strong>${ex.n}</strong>
+                    <span style="font-size:0.8rem; color:#94a3b8">${ex.r} reps | ${ex.d}s rest</span>
+                </div>
                 <div style="margin-top:10px">
-                    ${completed[ex.n].map((done, i) => `<div class="set-dot ${done ? 'active' : ''}" onclick="toggleSet('${ex.n}', ${i})">${i+1}</div>`).join('')}
+                    ${completed[ex.n].map((done, i) => `<div class="set-dot ${done ? 'active' : ''}" onclick="toggleSet('${ex.n}', ${i}, ${ex.d})">${i+1}</div>`).join('')}
                 </div>
             </div>`;
         }).join('');
     }
 
-    function toggleSet(n, i) {
+    function toggleSet(n, i, restSeconds) {
         completed[n][i] = !completed[n][i];
-        if (completed[n][i]) startTimer(60);
+        if (completed[n][i]) startTimer(restSeconds);
         renderToday();
     }
 
@@ -124,7 +128,8 @@
         document.getElementById('timer-bar').style.display = 'block';
         timerInt = setInterval(() => {
             s--;
-            document.getElementById('timer-display').innerText = `00:${s < 10 ? '0'+s : s}`;
+            let min = Math.floor(s/60), sec = s%60;
+            document.getElementById('timer-display').innerText = `${min < 10 ? '0'+min : min}:${sec < 10 ? '0'+sec : sec}`;
             if (s <= 0) stopTimer();
         }, 1000);
     }
@@ -134,31 +139,47 @@
     function renderEdit() {
         let h = '';
         for (let t in state.routines) {
-            h += `<h3>${t.toUpperCase()}</h3>`;
+            h += `<h3 style="color:var(--primary); margin-top:20px; border-bottom:1px solid #334155">${t.toUpperCase()}</h3>`;
             state.routines[t].forEach((ex, i) => {
-                h += `<div class="card"><input type="text" value="${ex.n}" id="n-${t}-${i}" style="width:100%"><br><input type="number" value="${ex.s}" id="s-${t}-${i}"> séries</div>`;
+                h += `<div class="card">
+                    <label style="font-size:0.7rem">NOME DO EXERCÍCIO</label>
+                    <input type="text" value="${ex.n}" id="n-${t}-${i}" class="edit-input">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px">
+                        <div><label style="font-size:0.7rem">SETS</label><input type="number" value="${ex.s}" id="s-${t}-${i}" class="edit-input"></div>
+                        <div><label style="font-size:0.7rem">REPS</label><input type="text" value="${ex.r}" id="r-${t}-${i}" class="edit-input"></div>
+                        <div><label style="font-size:0.7rem">REST(s)</label><input type="number" value="${ex.d}" id="d-${t}-${i}" class="edit-input"></div>
+                    </div>
+                </div>`;
             });
         }
         document.getElementById('edit-lists').innerHTML = h;
     }
 
     function saveAll() {
-        // Lógica de salvamento simplificada para evitar travas
-        localStorage.setItem('workoutV18', JSON.stringify(state));
-        alert("Salvo!");
-        location.reload();
+        for (let t in state.routines) {
+            state.routines[t].forEach((ex, i) => {
+                ex.n = document.getElementById(`n-${t}-${i}`).value;
+                ex.s = document.getElementById(`s-${t}-${i}`).value;
+                ex.r = document.getElementById(`r-${t}-${i}`).value;
+                ex.d = document.getElementById(`d-${t}-${i}`).value;
+            });
+        }
+        localStorage.setItem('workoutV19', JSON.stringify(state));
+        alert("Configurações salvas com sucesso!");
+        showView('today');
     }
 
     function renderHistory() {
-        document.getElementById('historyList').innerHTML = state.history.map(h => `<div class="card">${h.date}<br>${h.type}: ${h.data}</div>`).join('');
+        document.getElementById('historyList').innerHTML = state.history.length ? state.history.map(h => `<div class="card"><small>${h.date}</small><br><strong>${h.type}</strong>: ${h.data}</div>`).join('') : "<p>Sem histórico.</p>";
     }
 
     async function finish(m) {
-        let d = m === 'CORRIDA' ? document.getElementById('run-dist').value + " KM" : "Treino Concluído";
-        state.history.unshift({date: new Date().toLocaleString(), type: m, data: d});
-        localStorage.setItem('workoutV18', JSON.stringify(state));
-        await fetch(GOOGLE_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({type: m, data: d}) });
-        alert("Enviado!");
+        let d = m === 'CORRIDA' ? document.getElementById('run-dist').value + " KM" : Object.keys(completed).map(n => `${n}: ${completed[n].filter(s => s).length} sets`).join(', ');
+        const entry = {date: new Date().toLocaleString(), type: m, data: d};
+        state.history.unshift(entry);
+        localStorage.setItem('workoutV19', JSON.stringify(state));
+        await fetch(GOOGLE_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(entry) });
+        alert("Enviado com sucesso!");
         location.reload();
     }
 </script>

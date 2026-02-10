@@ -3,24 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Workout OS v21.1</title>
+    <title>Workout OS v22 - FORCE CLICK</title>
     <style>
         :root { --primary: #3b82f6; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #22c55e; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; touch-action: manipulation; }
-        .nav { display: flex; justify-content: space-around; background: var(--card); padding: 10px; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #334155; }
-        .nav button { background: none; border: none; color: #94a3b8; font-weight: bold; cursor: pointer; padding: 10px; font-size: 0.75rem; text-transform: uppercase; }
+        
+        /* Menu Superior */
+        .nav { display: flex; justify-content: space-around; background: var(--card); padding: 10px; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid #334155; }
+        .nav button { background: none; border: none; color: #94a3b8; font-weight: bold; cursor: pointer; padding: 15px; font-size: 0.75rem; text-transform: uppercase; }
         .nav button.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
-        .container { padding: 15px; max-width: 600px; margin: 0 auto; padding-bottom: 120px; }
+
+        .container { padding: 15px; max-width: 600px; margin: 0 auto; padding-bottom: 140px; }
         .view { display: none; }
         .view.active { display: block; }
+        
+        /* Botões de Categoria - Reforçados para clique */
+        .selector-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .sel-btn { 
+            padding: 20px; border-radius: 10px; border: 2px solid var(--primary); 
+            background: #1e293b; color: white; cursor: pointer; 
+            font-weight: bold; font-size: 0.8rem; text-align: center;
+            -webkit-appearance: none; appearance: none;
+        }
+        .sel-btn:active { background: var(--primary); transform: scale(0.95); }
+        .sel-btn.active { background: var(--primary); box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+
         .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #334155; }
-        .selector-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
-        .sel-btn { padding: 15px; border-radius: 8px; border: 2px solid var(--primary); background: #1e293b; color: white; cursor: pointer; font-weight: bold; font-size: 0.7rem; }
-        .sel-btn.active { background: var(--primary); }
-        .set-dot { width: 48px; height: 48px; border-radius: 50%; border: 2px solid #475569; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; background: #1e293b; margin: 5px; }
+        
+        /* Bolinhas de Séries */
+        .set-dot { 
+            width: 50px; height: 50px; border-radius: 50%; border: 2px solid #475569; 
+            display: inline-flex; align-items: center; justify-content: center; 
+            font-weight: bold; cursor: pointer; background: #1e293b; margin: 6px;
+            user-select: none; -webkit-tap-highlight-color: transparent;
+        }
         .set-dot.active { background: var(--accent); border-color: var(--accent); color: white; }
-        .edit-input { width: 100%; background: #0f172a; border: 1px solid #475569; color: white; padding: 10px; border-radius: 6px; margin: 5px 0; box-sizing: border-box; font-size: 0.9rem; }
-        .btn-action { background: var(--accent); color: white; border: none; padding: 18px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: bold; font-size: 1rem; margin-top: 10px; }
+
+        .edit-input { width: 100%; background: #0f172a; border: 1px solid #475569; color: white; padding: 12px; border-radius: 8px; margin: 5px 0; box-sizing: border-box; }
+        .btn-action { background: var(--accent); color: white; border: none; padding: 20px; border-radius: 12px; width: 100%; cursor: pointer; font-weight: bold; font-size: 1.1rem; margin-top: 15px; }
+        
         #timer-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #1e293b; border-top: 4px solid var(--primary); padding: 15px; display: none; z-index: 2000; text-align: center; }
     </style>
 </head>
@@ -28,7 +49,7 @@
 
 <div id="timer-bar">
     <div id="timer-display" style="font-size: 2.2rem; font-weight: bold; color: var(--primary);">00:00</div>
-    <button onclick="stopTimer()" style="background:#ef4444; color:white; border:none; padding:8px 20px; border-radius:8px; margin-top:5px; font-weight:bold;">PULAR DESCANSO</button>
+    <button onclick="stopTimer()" style="background:#ef4444; color:white; border:none; padding:10px 25px; border-radius:8px; margin-top:5px; font-weight:bold;">PULAR</button>
 </div>
 
 <div class="nav">
@@ -41,19 +62,21 @@
 <div class="container">
     <div id="view-today" class="view active">
         <div class="selector-btns">
-            <button class="sel-btn" onclick="setWorkout('legs_s')">LEGS (STR)</button>
-            <button class="sel-btn" onclick="setWorkout('push')">PUSH</button>
-            <button class="sel-btn" onclick="setWorkout('legs_p')">LEGS (PLYO)</button>
-            <button class="sel-btn" onclick="setWorkout('pull')">PULL</button>
+            <button class="sel-btn" onclick="setWorkout('legs_s', this)">LEGS (STR)</button>
+            <button class="sel-btn" onclick="setWorkout('push', this)">PUSH</button>
+            <button class="sel-btn" onclick="setWorkout('legs_p', this)">LEGS (PLYO)</button>
+            <button class="sel-btn" onclick="setWorkout('pull', this)">PULL</button>
         </div>
-        <div id="todayList"><p style="text-align:center; color:#94a3b8;">Selecione uma categoria acima.</p></div>
+        <div id="todayList" style="text-align:center; color:#94a3b8; padding:20px;">
+            Toque em um treino acima para carregar os exercícios.
+        </div>
         <button id="finish-btn" class="btn-action" style="display:none" onclick="finish('TREINO')">FINALIZAR E ENVIAR</button>
     </div>
 
     <div id="view-run" class="view">
         <div class="card">
             <h3>REGISTRAR CORRIDA</h3>
-            <input type="number" step="0.1" id="run-dist" class="edit-input" placeholder="KM percorridos (ex: 2.5)">
+            <input type="number" step="0.1" id="run-dist" class="edit-input" placeholder="KM (ex: 2.5)">
             <button class="btn-action" onclick="finish('CORRIDA')">SALVAR CORRIDA</button>
         </div>
     </div>
@@ -69,8 +92,8 @@
 </div>
 
 <script>
-    // URL DO SEU GOOGLE APPS SCRIPT (SUBSTITUA AQUI)
-    const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbxIgz83h_70zfBScoNUmx8C8sGdeuRLbZVYFedoqzSDK2tPtqFzEgIkcrQuqfWC-Arn/exec"; 
+    // --- CONFIGURAÇÃO ---
+    const GOOGLE_URL = "COLE_SEU_LINK_AQUI"; 
     
     const defaultData = {
         legs_s: [{n:"Rom Deadlift",s:2,r:"5",d:60},{n:"Step ups",s:2,r:"5",d:60},{n:"Bulg. Split squats",s:2,r:"5",d:60},{n:"Crab lifts",s:2,r:"5",d:60},{n:"Glute bridge",s:2,r:"5",d:60}],
@@ -79,7 +102,14 @@
         pull: [{n:"Leg ass. Pull ups",s:2,r:"5",d:60},{n:"Skin the cat",s:2,r:"5",d:60},{n:"Leg ass. Chin ups",s:2,r:"5",d:60},{n:"Front Lever",s:2,r:"5",d:60},{n:"Oblique SA G2OH",s:2,r:"5",d:60}]
     };
 
-    let state = JSON.parse(localStorage.getItem('workoutV21')) || { routines: defaultData, history: [] };
+    // Tenta carregar dados, se falhar, usa o padrão
+    let state;
+    try {
+        state = JSON.parse(localStorage.getItem('workoutV22')) || { routines: defaultData, history: [] };
+    } catch(e) {
+        state = { routines: defaultData, history: [] };
+    }
+
     let activeT = null;
     let completed = {};
     let timerInt;
@@ -93,21 +123,24 @@
         if(v === 'history') renderHistory();
     }
 
-    function setWorkout(t) {
+    function setWorkout(t, btn) {
         activeT = t;
         document.querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
-        if(event) event.target.classList.add('active');
+        btn.classList.add('active');
         document.getElementById('finish-btn').style.display = 'block';
         renderToday();
     }
 
     function renderToday() {
+        if(!activeT) return;
         const container = document.getElementById('todayList');
         container.innerHTML = state.routines[activeT].map(ex => {
             if (!completed[ex.n]) completed[ex.n] = Array(parseInt(ex.s)).fill(false);
             return `<div class="card">
                 <div style="display:flex; justify-content:space-between"><strong>${ex.n}</strong> <span>${ex.r} reps</span></div>
-                <div style="margin-top:10px">${completed[ex.n].map((done, i) => `<div class="set-dot ${done ? 'active' : ''}" onclick="toggleSet('${ex.n}', ${i}, ${ex.d})">${i+1}</div>`).join('')}</div>
+                <div style="margin-top:10px">${completed[ex.n].map((done, i) => `
+                    <div class="set-dot ${done ? 'active' : ''}" onclick="toggleSet('${ex.n.replace(/'/g, "\\'")}', ${i}, ${ex.d})">${i+1}</div>
+                `).join('')}</div>
             </div>`;
         }).join('');
     }
@@ -137,3 +170,59 @@
             h += `<h3 style="color:var(--primary); margin-top:15px">${t.toUpperCase()}</h3>`;
             state.routines[t].forEach((ex, i) => {
                 h += `<div class="card">
+                    <input type="text" value="${ex.n}" id="n-${t}-${i}" class="edit-input">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px">
+                        <input type="number" value="${ex.s}" id="s-${t}-${i}" class="edit-input" placeholder="Sets">
+                        <input type="text" value="${ex.r}" id="r-${t}-${i}" class="edit-input" placeholder="Reps">
+                        <input type="number" value="${ex.d}" id="d-${t}-${i}" class="edit-input" placeholder="Rest">
+                    </div>
+                </div>`;
+            });
+        }
+        document.getElementById('edit-lists').innerHTML = h;
+    }
+
+    function saveAll() {
+        for (let t in state.routines) {
+            state.routines[t].forEach((ex, i) => {
+                ex.n = document.getElementById(`n-${t}-${i}`).value;
+                ex.s = document.getElementById(`s-${t}-${i}`).value;
+                ex.r = document.getElementById(`r-${t}-${i}`).value;
+                ex.d = document.getElementById(`d-${t}-${i}`).value;
+            });
+        }
+        localStorage.setItem('workoutV22', JSON.stringify(state));
+        alert("Alterações salvas!");
+        showView('today');
+    }
+
+    function renderHistory() {
+        document.getElementById('historyList').innerHTML = state.history.map(h => `<div class="card"><small>${h.date}</small><br><strong>${h.type}</strong>: ${h.data}</div>`).join('') || "Sem registros.";
+    }
+
+    async function finish(m) {
+        const dateStr = new Date().toLocaleString('pt-BR');
+        let payload;
+
+        if (m === 'CORRIDA') {
+            const dist = document.getElementById('run-dist').value + " KM";
+            payload = { date: dateStr, type: m, data: dist };
+        } else {
+            const details = state.routines[activeT].map(ex => ({
+                name: ex.n,
+                setsDone: completed[ex.n] ? completed[ex.n].filter(s => s).length : 0,
+                reps: ex.r
+            }));
+            payload = { date: dateStr, type: m, details: details };
+        }
+
+        state.history.unshift({date: dateStr, type: m, data: m === 'CORRIDA' ? payload.data : "Treino enviado"});
+        localStorage.setItem('workoutV22', JSON.stringify(state));
+
+        await fetch(GOOGLE_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+        alert("Enviado para a planilha!");
+        location.reload();
+    }
+</script>
+</body>
+</html>

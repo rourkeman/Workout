@@ -1,34 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Workout OS v21.1</title>
+    <style>
+        :root { --primary: #3b82f6; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #22c55e; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; touch-action: manipulation; }
+        .nav { display: flex; justify-content: space-around; background: var(--card); padding: 10px; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #334155; }
+        .nav button { background: none; border: none; color: #94a3b8; font-weight: bold; cursor: pointer; padding: 10px; font-size: 0.75rem; text-transform: uppercase; }
+        .nav button.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+        .container { padding: 15px; max-width: 600px; margin: 0 auto; padding-bottom: 120px; }
+        .view { display: none; }
+        .view.active { display: block; }
+        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #334155; }
+        .selector-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+        .sel-btn { padding: 15px; border-radius: 8px; border: 2px solid var(--primary); background: #1e293b; color: white; cursor: pointer; font-weight: bold; font-size: 0.7rem; }
+        .sel-btn.active { background: var(--primary); }
+        .set-dot { width: 48px; height: 48px; border-radius: 50%; border: 2px solid #475569; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; background: #1e293b; margin: 5px; }
+        .set-dot.active { background: var(--accent); border-color: var(--accent); color: white; }
+        .edit-input { width: 100%; background: #0f172a; border: 1px solid #475569; color: white; padding: 10px; border-radius: 6px; margin: 5px 0; box-sizing: border-box; font-size: 0.9rem; }
+        .btn-action { background: var(--accent); color: white; border: none; padding: 18px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: bold; font-size: 1rem; margin-top: 10px; }
+        #timer-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #1e293b; border-top: 4px solid var(--primary); padding: 15px; display: none; z-index: 2000; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div id="timer-bar">
+    <div id="timer-display" style="font-size: 2.2rem; font-weight: bold; color: var(--primary);">00:00</div>
+    <button onclick="stopTimer()" style="background:#ef4444; color:white; border:none; padding:8px 20px; border-radius:8px; margin-top:5px; font-weight:bold;">PULAR DESCANSO</button>
+</div>
+
+<div class="nav">
+    <button onclick="showView('today')" id="nav-today" class="active">TREINAR</button>
+    <button onclick="showView('run')" id="nav-run">CORRIDA</button>
+    <button onclick="showView('history')" id="nav-history">HISTÓRICO</button>
+    <button onclick="showView('edit')" id="nav-edit">EDITAR</button>
+</div>
+
+<div class="container">
+    <div id="view-today" class="view active">
+        <div class="selector-btns">
+            <button class="sel-btn" onclick="setWorkout('legs_s')">LEGS (STR)</button>
+            <button class="sel-btn" onclick="setWorkout('push')">PUSH</button>
+            <button class="sel-btn" onclick="setWorkout('legs_p')">LEGS (PLYO)</button>
+            <button class="sel-btn" onclick="setWorkout('pull')">PULL</button>
+        </div>
+        <div id="todayList"><p style="text-align:center; color:#94a3b8;">Selecione uma categoria acima.</p></div>
+        <button id="finish-btn" class="btn-action" style="display:none" onclick="finish('TREINO')">FINALIZAR E ENVIAR</button>
+    </div>
+
+    <div id="view-run" class="view">
+        <div class="card">
+            <h3>REGISTRAR CORRIDA</h3>
+            <input type="number" step="0.1" id="run-dist" class="edit-input" placeholder="KM percorridos (ex: 2.5)">
+            <button class="btn-action" onclick="finish('CORRIDA')">SALVAR CORRIDA</button>
+        </div>
+    </div>
+
+    <div id="view-history" class="view">
+        <div id="historyList"></div>
+    </div>
+
+    <div id="view-edit" class="view">
+        <div id="edit-lists"></div>
+        <button class="btn-action" style="background:var(--primary)" onclick="saveAll()">SALVAR ALTERAÇÕES</button>
+    </div>
+</div>
+
 <script>
-    const GOOGLE_URL = "SUA_NOVA_URL_AQUI"; 
+    // URL DO SEU GOOGLE APPS SCRIPT (SUBSTITUA AQUI)
+    const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbxIgz83h_70zfBScoNUmx8C8sGdeuRLbZVYFedoqzSDK2tPtqFzEgIkcrQuqfWC-Arn/exec"; 
+    
+    const defaultData = {
+        legs_s: [{n:"Rom Deadlift",s:2,r:"5",d:60},{n:"Step ups",s:2,r:"5",d:60},{n:"Bulg. Split squats",s:2,r:"5",d:60},{n:"Crab lifts",s:2,r:"5",d:60},{n:"Glute bridge",s:2,r:"5",d:60}],
+        push: [{n:"Leg ass. Dips",s:2,r:"5",d:60},{n:"Knee bent pike press ups",s:2,r:"5",d:60},{n:"Press ups",s:2,r:"5",d:60},{n:"Frog Holds",s:2,r:"5",d:60},{n:"L-sits",s:2,r:"5",d:60}],
+        legs_p: [{n:"Depth jumps",s:2,r:"5",d:60},{n:"Broad Jumps",s:2,r:"5",d:60},{n:"Kneeling jumps",s:2,r:"5",d:60},{n:"Lunge jumps",s:2,r:"5",d:60},{n:"Skater Jumps",s:2,r:"5",d:60}],
+        pull: [{n:"Leg ass. Pull ups",s:2,r:"5",d:60},{n:"Skin the cat",s:2,r:"5",d:60},{n:"Leg ass. Chin ups",s:2,r:"5",d:60},{n:"Front Lever",s:2,r:"5",d:60},{n:"Oblique SA G2OH",s:2,r:"5",d:60}]
+    };
 
-    async function finish(m) {
-        const dateStr = new Date().toLocaleString('pt-BR');
-        let payload;
+    let state = JSON.parse(localStorage.getItem('workoutV21')) || { routines: defaultData, history: [] };
+    let activeT = null;
+    let completed = {};
+    let timerInt;
 
-        if (m === 'CORRIDA') {
-            const dist = document.getElementById('run-dist').value + " KM";
-            payload = { date: dateStr, type: m, data: dist };
-        } else {
-            // Envia apenas Nome, Séries e Reps
-            const details = state.routines[activeT].map(ex => ({
-                name: ex.n,
-                setsDone: completed[ex.n] ? completed[ex.n].filter(s => s).length : 0,
-                reps: ex.r
-            }));
-            payload = { date: dateStr, type: m, details: details };
-        }
-
-        // Histórico local
-        state.history.unshift({date: dateStr, type: m, data: m === 'CORRIDA' ? payload.data : "Treino enviado"});
-        localStorage.setItem('workoutV21', JSON.stringify(state));
-
-        await fetch(GOOGLE_URL, { 
-            method: 'POST', 
-            mode: 'no-cors', 
-            body: JSON.stringify(payload) 
-        });
-
-        alert("Dados salvos por coluna!");
-        location.reload();
+    function showView(v) {
+        document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav button').forEach(el => el.classList.remove('active'));
+        document.getElementById('view-'+v).classList.add('active');
+        document.getElementById('nav-'+v).classList.add('active');
+        if(v === 'edit') renderEdit();
+        if(v === 'history') renderHistory();
     }
-</script>
+
+    function setWorkout(t) {
+        activeT = t;
+        document.querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
+        if(event) event.target.classList.add('active');
+        document.getElementById('finish-btn').style.display = 'block';
+        renderToday();
+    }
+
+    function renderToday() {
+        const container = document.getElementById('todayList');
+        container.innerHTML = state.routines[activeT].map(ex => {
+            if (!completed[ex.n]) completed[ex.n] = Array(parseInt(ex.s)).fill(false);
+            return `<div class="card">
+                <div style="display:flex; justify-content:space-between"><strong>${ex.n}</strong> <span>${ex.r} reps</span></div>
+                <div style="margin-top:10px">${completed[ex.n].map((done, i) => `<div class="set-dot ${done ? 'active' : ''}" onclick="toggleSet('${ex.n}', ${i}, ${ex.d})">${i+1}</div>`).join('')}</div>
+            </div>`;
+        }).join('');
+    }
+
+    function toggleSet(n, i, rest) {
+        completed[n][i] = !completed[n][i];
+        if (completed[n][i]) startTimer(rest);
+        renderToday();
+    }
+
+    function startTimer(s) {
+        clearInterval(timerInt);
+        document.getElementById('timer-bar').style.display = 'block';
+        timerInt = setInterval(() => {
+            s--;
+            let min = Math.floor(s/60), sec = s%60;
+            document.getElementById('timer-display').innerText = `${min}:${sec < 10 ? '0'+sec : sec}`;
+            if (s <= 0) stopTimer();
+        }, 1000);
+    }
+
+    function stopTimer() { clearInterval(timerInt); document.getElementById('timer-bar').style.display = 'none'; }
+
+    function renderEdit() {
+        let h = '';
+        for (let t in state.routines) {
+            h += `<h3 style="color:var(--primary); margin-top:15px">${t.toUpperCase()}</h3>`;
+            state.routines[t].forEach((ex, i) => {
+                h += `<div class="card">

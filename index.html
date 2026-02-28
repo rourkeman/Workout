@@ -143,8 +143,17 @@
     async function finishCardio() {
         const d = document.getElementById('c-dist').value;
         const t = document.getElementById('c-time').value;
-        if(!d || !t) return alert("Preencha KM e Tempo");
-        const payload = { date: new Date().toLocaleString('pt-BR'), type: currentCardio, dist: d + " KM", time: t };
+        
+        // Se for Corrida, exige distância. Se for Cycling, exige apenas o tempo.
+        if (currentCardio === 'CORRIDA' && !d) return alert("Para corrida, insira a distância.");
+        if (!t) return alert("Por favor, insira o tempo gasto.");
+        
+        const payload = { 
+            date: new Date().toLocaleString('pt-BR'), 
+            type: currentCardio, 
+            dist: d ? d + " KM" : null, 
+            time: t 
+        };
         await sendData(payload);
     }
 
@@ -201,3 +210,4 @@
 </script>
 </body>
 </html>
+

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Workout OS v26</title>
+    <title>Workout OS v27</title>
     <style>
         :root { --primary: #3b82f6; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #22c55e; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; touch-action: manipulation; }
@@ -15,23 +15,23 @@
         .view.active { display: block; }
         .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #334155; }
         
-        /* Seletor de Treinos Fluido */
         .selector-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; }
         .selector-scroll::-webkit-scrollbar { display: none; }
         .sel-btn { flex: 0 0 auto; padding: 12px 20px; border-radius: 20px; border: 2px solid var(--primary); background: #1e293b; color: white; cursor: pointer; font-weight: bold; font-size: 0.75rem; white-space: nowrap; }
-        .sel-btn.active { background: var(--primary); box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+        .sel-btn.active { background: var(--primary); }
 
-        .set-dot { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #475569; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; background: #1e293b; margin: 4px; }
-        .set-dot.active { background: var(--accent); border-color: var(--accent); color: white; }
+        /* Estilo das Bolinhas de Input Individual */
+        .set-input { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #475569; background: #0f172a; color: white; text-align: center; font-weight: bold; font-size: 1rem; margin: 4px; outline: none; transition: 0.3s; }
+        .set-input:focus { border-color: var(--primary); background: #1e293b; }
+        .set-input.has-value { border-color: var(--accent); background: #064e3b; }
+
         .edit-input { width: 100%; background: #0f172a; border: 1px solid #475569; color: white; padding: 10px; border-radius: 6px; margin: 5px 0; box-sizing: border-box; }
-        .on-the-go-input { width: 45px; background: #0f172a; border: 1px solid #475569; color: white; text-align: center; border-radius: 4px; font-size: 0.8rem; padding: 4px; }
         .btn-action { background: var(--accent); color: white; border: none; padding: 18px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: bold; font-size: 1rem; margin-top: 10px; }
         
         #timer-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #1e293b; border-top: 4px solid var(--primary); padding: 15px; display: none; z-index: 2000; text-align: center; }
         .cardio-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
         .cardio-grid button { padding: 10px; border-radius: 8px; border: 1px solid var(--primary); background: none; color: white; cursor: pointer; font-size: 0.7rem; font-weight: bold; }
         .cardio-grid button.active { background: var(--primary); }
-        .danger-btn { background: #ef4444; color: white; border: none; padding: 8px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -74,26 +74,22 @@
     <div id="view-history" class="view"><div id="historyList"></div></div>
     
     <div id="view-edit" class="view">
-        <button class="btn-action" style="background:var(--primary); margin-bottom:20px;" onclick="addNewCategory()">+ NOVO TREINO (EX: SEGUNDA)</button>
+        <button class="btn-action" style="background:var(--primary); margin-bottom:20px;" onclick="addNewCategory()">+ NOVO TREINO</button>
         <div id="edit-lists"></div>
-        <button class="btn-action" style="background:var(--accent)" onclick="saveAll()">SALVAR TODAS AS ALTERAÇÕES</button>
+        <button class="btn-action" style="background:var(--accent)" onclick="saveAll()">SALVAR CONFIGS</button>
     </div>
 </div>
 
 <script>
-    const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbxIgz83h_70zfBScoNUmx8C8sGdeuRLbZVYFedoqzSDK2tPtqFzEgIkcrQuqfWC-Arn/exec";
+    const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbxIgz83h_70zfBScoNUmx8C8sGdeuRLbZVYFedoqzSDK2tPtqFzEgIkcrQuqfWC-Arn/exec"; 
     let cardioType = 'RUN';
     let activeT = null;
-    let completed = {};
     let timerInt;
 
-    // Estado inicial com suporte a múltiplos dias
-    let state = JSON.parse(localStorage.getItem('workoutV26')) || { 
-        routines: {
-            "Segunda": [{n:"Exemplo 1",s:3,r:"10",d:60}],
-            "Terça": [{n:"Exemplo 2",s:3,r:"10",d:60}]
-        }, 
-        history: [] 
+    let state = JSON.parse(localStorage.getItem('workoutV27')) || { 
+        routines: { "Exemplo": [{n:"Flexão", s:3, r:"12", d:60}] }, 
+        history: [],
+        currentSession: {} // Salva o que você digita nas bolinhas
     };
 
     function showView(v) {
@@ -108,14 +104,14 @@
 
     function renderSelector() {
         const grid = document.getElementById('workout-selector');
-        const keys = Object.keys(state.routines);
-        grid.innerHTML = keys.map(key => 
+        grid.innerHTML = Object.keys(state.routines).map(key => 
             `<button class="sel-btn ${activeT === key ? 'active' : ''}" onclick="selectWorkout('${key}')">${key.toUpperCase()}</button>`
         ).join('');
     }
 
     function selectWorkout(key) {
         activeT = key;
+        if (!state.currentSession[activeT]) state.currentSession[activeT] = {};
         renderSelector();
         renderToday();
         document.getElementById('finish-btn').style.display = 'block';
@@ -125,31 +121,36 @@
         if(!activeT) return;
         const container = document.getElementById('todayList');
         container.innerHTML = state.routines[activeT].map((ex, idx) => {
-            if (!completed[ex.n]) completed[ex.n] = Array(15).fill(false);
+            const exerciseKey = `${activeT}_${idx}`;
+            if (!state.currentSession[activeT][exerciseKey]) {
+                state.currentSession[activeT][exerciseKey] = Array(parseInt(ex.s)).fill("");
+            }
+
             return `<div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <strong style="font-size:0.85rem;">${ex.n}</strong>
-                    <div style="font-size:0.75rem; color:#94a3b8">
-                        <input type="number" class="on-the-go-input" value="${ex.s}" onchange="updateLive(${idx}, 's', this.value)"> sets | 
-                        <input type="text" class="on-the-go-input" value="${ex.r}" onchange="updateLive(${idx}, 'r', this.value)"> reps
-                    </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <strong>${ex.n}</strong>
+                    <span style="font-size:0.7rem; color:#94a3b8">Meta: ${ex.r} reps</span>
                 </div>
-                <div style="display:flex; flex-wrap:wrap;">${Array.from({length: ex.s}).map((_, i) => 
-                    `<div class="set-dot ${completed[ex.n][i] ? 'active' : ''}" onclick="toggleSet('${ex.n}', ${i}, ${ex.d})">${i+1}</div>`
-                ).join('')}</div>
+                <div style="display:flex; flex-wrap:wrap;">
+                    ${state.currentSession[activeT][exerciseKey].map((val, i) => `
+                        <input type="number" 
+                               inputmode="numeric"
+                               class="set-input ${val !== "" ? 'has-value' : ''}" 
+                               value="${val}" 
+                               placeholder="${i+1}"
+                               onfocus="this.placeholder=''"
+                               onblur="this.placeholder='${i+1}'"
+                               onchange="recordSet('${exerciseKey}', ${i}, this.value, ${ex.d})">
+                    `).join('')}
+                </div>
             </div>`;
         }).join('');
     }
 
-    function updateLive(idx, field, val) {
-        state.routines[activeT][idx][field] = field === 's' ? parseInt(val) : val;
-        localStorage.setItem('workoutV26', JSON.stringify(state));
-        renderToday();
-    }
-
-    function toggleSet(n, i, rest) {
-        completed[n][i] = !completed[n][i];
-        if (completed[n][i]) startTimer(rest);
+    function recordSet(exKey, setIdx, val, rest) {
+        state.currentSession[activeT][exKey][setIdx] = val;
+        localStorage.setItem('workoutV27', JSON.stringify(state));
+        if (val !== "") startTimer(rest);
         renderToday();
     }
 
@@ -166,6 +167,32 @@
 
     function stopTimer() { clearInterval(timerInt); document.getElementById('timer-bar').style.display = 'none'; }
 
+    async function finishWorkout() {
+        const details = [];
+        const currentData = state.currentSession[activeT];
+        
+        state.routines[activeT].forEach((ex, idx) => {
+            const exerciseKey = `${activeT}_${idx}`;
+            const setsArray = currentData[exerciseKey] || [];
+            // Filtra apenas as séries que foram preenchidas
+            const validSets = setsArray.filter(v => v !== "" && v !== null);
+            
+            if (validSets.length > 0) {
+                details.push({
+                    name: ex.n,
+                    setsDone: validSets.length,
+                    reps: validSets.join("-") // Envia como "10-8-7" para a planilha
+                });
+            }
+        });
+
+        if (details.length === 0) return alert("Preencha pelo menos uma série!");
+        
+        await send({ date: new Date().toLocaleString('pt-BR'), type: "TREINO ("+activeT+")", details: details });
+        state.currentSession[activeT] = {}; // Limpa após enviar
+        localStorage.setItem('workoutV27', JSON.stringify(state));
+    }
+
     function setCardio(t) {
         cardioType = t;
         document.querySelectorAll('.cardio-grid button').forEach(b => b.classList.remove('active'));
@@ -175,79 +202,46 @@
     async function finishCardio() {
         const d = document.getElementById('c-dist').value;
         const t = document.getElementById('c-time').value;
-        if(cardioType === 'RUN' && !d) return alert("Distância obrigatória para RUN");
-        if(!t) return alert("Tempo obrigatório");
+        if(cardioType === 'RUN' && !d) return alert("Insira KM!");
+        if(!t) return alert("Insira tempo!");
         await send({ date: new Date().toLocaleString('pt-BR'), type: cardioType, dist: d ? d + " KM" : "Indoor", time: t });
-    }
-
-    async function finishWorkout() {
-        const details = state.routines[activeT].map(ex => ({
-            name: ex.n, setsDone: completed[ex.n] ? completed[ex.n].filter(s => s).length : 0, reps: ex.r
-        }));
-        await send({ date: new Date().toLocaleString('pt-BR'), type: "TREINO ("+activeT+")", details: details });
     }
 
     async function send(p) {
         state.history.unshift({date: p.date, type: p.type, data: p.dist || "Sessão"});
-        localStorage.setItem('workoutV26', JSON.stringify(state));
+        localStorage.setItem('workoutV27', JSON.stringify(state));
         await fetch(GOOGLE_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(p) });
-        alert("Enviado!"); location.reload();
+        alert("Dados enviados!"); location.reload();
     }
 
-    // --- FUNÇÕES DE CONFIGURAÇÃO DINÂMICA ---
     function addNewCategory() {
-        const name = prompt("Nome do novo treino (ex: Sabado, FullBody, Cardio-Rope):");
-        if(name) {
-            state.routines[name] = [{n:"Novo Exercício", s:3, r:"12", d:60}];
-            renderEdit();
-        }
-    }
-
-    function removeCategory(name) {
-        if(confirm("Excluir o treino '"+name+"' inteiro?")) {
-            delete state.routines[name];
-            renderEdit();
-        }
-    }
-
-    function addEx(cat) {
-        state.routines[cat].push({n:"Novo Exercício", s:3, r:"12", d:60});
-        renderEdit();
+        const name = prompt("Nome do treino:");
+        if(name) { state.routines[name] = [{n:"Novo", s:3, r:"10", d:60}]; renderEdit(); }
     }
 
     function renderEdit() {
         let h = '';
         for (let t in state.routines) {
-            h += `<div class="card" style="border-left: 4px solid var(--primary)">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h3 style="margin:0">${t.toUpperCase()}</h3>
-                    <button class="danger-btn" onclick="removeCategory('${t}')">EXCLUIR TREINO</button>
-                </div>`;
+            h += `<div class="card"><h3>${t}</h3>`;
             state.routines[t].forEach((ex, i) => {
-                h += `<div style="margin-top:15px; border-top:1px solid #334155; padding-top:10px;">
-                    <input type="text" value="${ex.n}" onchange="state.routines['${t}'][${i}].n=this.value" class="edit-input" placeholder="Nome">
+                h += `<div style="margin-bottom:10px; border-bottom:1px solid #334155;">
+                    <input type="text" value="${ex.n}" onchange="state.routines['${t}'][${i}].n=this.value" class="edit-input">
                     <div style="display:flex; gap:5px;">
-                        <input type="number" value="${ex.s}" onchange="state.routines['${t}'][${i}].s=parseInt(this.value)" class="edit-input" placeholder="Sets">
+                        <input type="number" value="${ex.s}" onchange="state.routines['${t}'][${i}].s=this.value" class="edit-input" placeholder="Sets">
                         <input type="text" value="${ex.r}" onchange="state.routines['${t}'][${i}].r=this.value" class="edit-input" placeholder="Reps">
-                        <input type="number" value="${ex.d}" onchange="state.routines['${t}'][${i}].d=parseInt(this.value)" class="edit-input" placeholder="Rest">
+                        <input type="number" value="${ex.d}" onchange="state.routines['${t}'][${i}].d=this.value" class="edit-input" placeholder="Rest">
                     </div>
                 </div>`;
             });
-            h += `<button class="sel-btn" style="margin-top:10px; width:100%; border-style:dashed;" onclick="addEx('${t}')">+ Adicionar Exercício</button></div>`;
+            h += `</div>`;
         }
         document.getElementById('edit-lists').innerHTML = h;
     }
 
-    function saveAll() {
-        localStorage.setItem('workoutV26', JSON.stringify(state));
-        alert("Planilha de treinos atualizada!");
-        showView('today');
-    }
-
+    function saveAll() { localStorage.setItem('workoutV27', JSON.stringify(state)); alert("Salvo!"); showView('today'); }
     function renderHistory() {
         document.getElementById('historyList').innerHTML = state.history.slice(0,10).map(h => `<div class="card"><small>${h.date}</small><br><strong>${h.type}</strong>: ${h.data}</div>`).join('');
     }
-
     renderSelector();
 </script>
 </body>

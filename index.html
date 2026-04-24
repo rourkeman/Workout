@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Workout OS v25 - Multi-Mode</title>
+    <title>Workout OS v26</title>
     <style>
         :root { --primary: #3b82f6; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #22c55e; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; touch-action: manipulation; }
@@ -14,18 +14,24 @@
         .view { display: none; }
         .view.active { display: block; }
         .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #334155; }
-        .selector-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
-        .sel-btn { padding: 15px; border-radius: 8px; border: 2px solid var(--primary); background: #1e293b; color: white; cursor: pointer; font-weight: bold; font-size: 0.75rem; }
-        .sel-btn.active { background: var(--primary); }
+        
+        /* Seletor de Treinos Fluido */
+        .selector-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; }
+        .selector-scroll::-webkit-scrollbar { display: none; }
+        .sel-btn { flex: 0 0 auto; padding: 12px 20px; border-radius: 20px; border: 2px solid var(--primary); background: #1e293b; color: white; cursor: pointer; font-weight: bold; font-size: 0.75rem; white-space: nowrap; }
+        .sel-btn.active { background: var(--primary); box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+
         .set-dot { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #475569; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; background: #1e293b; margin: 4px; }
         .set-dot.active { background: var(--accent); border-color: var(--accent); color: white; }
         .edit-input { width: 100%; background: #0f172a; border: 1px solid #475569; color: white; padding: 10px; border-radius: 6px; margin: 5px 0; box-sizing: border-box; }
-        .on-the-go-input { width: 50px; background: #0f172a; border: 1px solid #475569; color: white; text-align: center; border-radius: 4px; font-size: 0.8rem; }
+        .on-the-go-input { width: 45px; background: #0f172a; border: 1px solid #475569; color: white; text-align: center; border-radius: 4px; font-size: 0.8rem; padding: 4px; }
         .btn-action { background: var(--accent); color: white; border: none; padding: 18px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: bold; font-size: 1rem; margin-top: 10px; }
+        
         #timer-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #1e293b; border-top: 4px solid var(--primary); padding: 15px; display: none; z-index: 2000; text-align: center; }
-        .cardio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
-        .cardio-grid button { padding: 12px; border-radius: 8px; border: 1px solid var(--primary); background: none; color: white; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
+        .cardio-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
+        .cardio-grid button { padding: 10px; border-radius: 8px; border: 1px solid var(--primary); background: none; color: white; cursor: pointer; font-size: 0.7rem; font-weight: bold; }
         .cardio-grid button.active { background: var(--primary); }
+        .danger-btn { background: #ef4444; color: white; border: none; padding: 8px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -44,7 +50,7 @@
 
 <div class="container">
     <div id="view-today" class="view active">
-        <div id="workout-selector" class="selector-grid"></div>
+        <div id="workout-selector" class="selector-scroll"></div>
         <div id="todayList"></div>
         <button id="finish-btn" class="btn-action" style="display:none" onclick="finishWorkout()">FINALIZAR SESSÃO</button>
     </div>
@@ -55,11 +61,11 @@
             <div class="cardio-grid">
                 <button id="btn-RUN" class="active" onclick="setCardio('RUN')">RUN</button>
                 <button id="btn-BIKE" onclick="setCardio('BIKE')">BIKE</button>
+                <button id="btn-ROPE" onclick="setCardio('ROPE')">ROPE</button>
                 <button id="btn-SWIM" onclick="setCardio('SWIM')">SWIM</button>
                 <button id="btn-WALK" onclick="setCardio('WALK')">WALK</button>
-                <button id="btn-ROPE" onclick="setCardio('ROPE')">ROPE</button>
             </div>
-            <input type="number" id="c-dist" class="edit-input" placeholder="KM (opcional p/ Bike/Swim)">
+            <input type="number" id="c-dist" class="edit-input" placeholder="KM (opcional)">
             <input type="text" id="c-time" class="edit-input" placeholder="Tempo (ex: 40min)">
             <button class="btn-action" onclick="finishCardio()">REGISTRAR</button>
         </div>
@@ -68,26 +74,27 @@
     <div id="view-history" class="view"><div id="historyList"></div></div>
     
     <div id="view-edit" class="view">
+        <button class="btn-action" style="background:var(--primary); margin-bottom:20px;" onclick="addNewCategory()">+ NOVO TREINO (EX: SEGUNDA)</button>
         <div id="edit-lists"></div>
-        <button class="btn-action" style="background:var(--primary)" onclick="saveAll()">SALVAR TUDO</button>
+        <button class="btn-action" style="background:var(--accent)" onclick="saveAll()">SALVAR TODAS AS ALTERAÇÕES</button>
     </div>
 </div>
 
 <script>
-    const GOOGLE_URL = "SUA_URL_AQUI";
+    const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbxIgz83h_70zfBScoNUmx8C8sGdeuRLbZVYFedoqzSDK2tPtqFzEgIkcrQuqfWC-Arn/exec";
     let cardioType = 'RUN';
     let activeT = null;
     let completed = {};
     let timerInt;
 
-    const defaultData = {
-        legs_s: [{n:"Rom Deadlift",s:2,r:5,d:60},{n:"Step ups",s:2,r:5,d:60}],
-        push: [{n:"Dips",s:2,r:5,d:60},{n:"Press ups",s:2,r:5,d:60}],
-        legs_p: [{n:"Depth jumps",s:2,r:5,d:60}],
-        pull: [{n:"Pull ups",s:2,r:5,d:60}]
+    // Estado inicial com suporte a múltiplos dias
+    let state = JSON.parse(localStorage.getItem('workoutV26')) || { 
+        routines: {
+            "Segunda": [{n:"Exemplo 1",s:3,r:"10",d:60}],
+            "Terça": [{n:"Exemplo 2",s:3,r:"10",d:60}]
+        }, 
+        history: [] 
     };
-
-    let state = JSON.parse(localStorage.getItem('workoutV25')) || { routines: defaultData, history: [] };
 
     function showView(v) {
         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -101,7 +108,8 @@
 
     function renderSelector() {
         const grid = document.getElementById('workout-selector');
-        grid.innerHTML = Object.keys(state.routines).map(key => 
+        const keys = Object.keys(state.routines);
+        grid.innerHTML = keys.map(key => 
             `<button class="sel-btn ${activeT === key ? 'active' : ''}" onclick="selectWorkout('${key}')">${key.toUpperCase()}</button>`
         ).join('');
     }
@@ -117,16 +125,16 @@
         if(!activeT) return;
         const container = document.getElementById('todayList');
         container.innerHTML = state.routines[activeT].map((ex, idx) => {
-            if (!completed[ex.n]) completed[ex.n] = Array(9).fill(false); // Suporta até 9 sets on-the-go
+            if (!completed[ex.n]) completed[ex.n] = Array(15).fill(false);
             return `<div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <strong style="font-size:0.9rem;">${ex.n}</strong>
-                    <div>
-                        <input type="number" class="on-the-go-input" value="${ex.s}" onchange="updateLive('${idx}', 's', this.value)"> sets |
-                        <input type="text" class="on-the-go-input" value="${ex.r}" onchange="updateLive('${idx}', 'r', this.value)"> reps
+                    <strong style="font-size:0.85rem;">${ex.n}</strong>
+                    <div style="font-size:0.75rem; color:#94a3b8">
+                        <input type="number" class="on-the-go-input" value="${ex.s}" onchange="updateLive(${idx}, 's', this.value)"> sets | 
+                        <input type="text" class="on-the-go-input" value="${ex.r}" onchange="updateLive(${idx}, 'r', this.value)"> reps
                     </div>
                 </div>
-                <div>${Array.from({length: ex.s}).map((_, i) => 
+                <div style="display:flex; flex-wrap:wrap;">${Array.from({length: ex.s}).map((_, i) => 
                     `<div class="set-dot ${completed[ex.n][i] ? 'active' : ''}" onclick="toggleSet('${ex.n}', ${i}, ${ex.d})">${i+1}</div>`
                 ).join('')}</div>
             </div>`;
@@ -135,6 +143,7 @@
 
     function updateLive(idx, field, val) {
         state.routines[activeT][idx][field] = field === 's' ? parseInt(val) : val;
+        localStorage.setItem('workoutV26', JSON.stringify(state));
         renderToday();
     }
 
@@ -164,67 +173,75 @@
     }
 
     async function finishCardio() {
-    const d = document.getElementById('c-dist').value;
-    const t = document.getElementById('c-time').value;
-    
-    // Apenas RUN exige distância obrigatoriamente
-    if (cardioType === 'RUN' && !d) return alert("Insira a distância para corrida!");
-    if (!t) return alert("Insira o tempo gasto!");
-    
-    const payload = { 
-        date: new Date().toLocaleString('pt-BR'), 
-        type: cardioType, 
-        dist: d ? d + " KM" : null, 
-        time: t 
-    };
-    await send(payload);
-}
+        const d = document.getElementById('c-dist').value;
+        const t = document.getElementById('c-time').value;
+        if(cardioType === 'RUN' && !d) return alert("Distância obrigatória para RUN");
+        if(!t) return alert("Tempo obrigatório");
+        await send({ date: new Date().toLocaleString('pt-BR'), type: cardioType, dist: d ? d + " KM" : "Indoor", time: t });
+    }
 
     async function finishWorkout() {
         const details = state.routines[activeT].map(ex => ({
             name: ex.n, setsDone: completed[ex.n] ? completed[ex.n].filter(s => s).length : 0, reps: ex.r
         }));
-        await send({ date: new Date().toLocaleString('pt-BR'), type: "TREINO", details: details });
+        await send({ date: new Date().toLocaleString('pt-BR'), type: "TREINO ("+activeT+")", details: details });
     }
 
     async function send(p) {
         state.history.unshift({date: p.date, type: p.type, data: p.dist || "Sessão"});
-        localStorage.setItem('workoutV25', JSON.stringify(state));
+        localStorage.setItem('workoutV26', JSON.stringify(state));
         await fetch(GOOGLE_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(p) });
         alert("Enviado!"); location.reload();
+    }
+
+    // --- FUNÇÕES DE CONFIGURAÇÃO DINÂMICA ---
+    function addNewCategory() {
+        const name = prompt("Nome do novo treino (ex: Sabado, FullBody, Cardio-Rope):");
+        if(name) {
+            state.routines[name] = [{n:"Novo Exercício", s:3, r:"12", d:60}];
+            renderEdit();
+        }
+    }
+
+    function removeCategory(name) {
+        if(confirm("Excluir o treino '"+name+"' inteiro?")) {
+            delete state.routines[name];
+            renderEdit();
+        }
+    }
+
+    function addEx(cat) {
+        state.routines[cat].push({n:"Novo Exercício", s:3, r:"12", d:60});
+        renderEdit();
     }
 
     function renderEdit() {
         let h = '';
         for (let t in state.routines) {
-            h += `<div class="card"><h3>${t.toUpperCase()}</h3>`;
+            h += `<div class="card" style="border-left: 4px solid var(--primary)">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="margin:0">${t.toUpperCase()}</h3>
+                    <button class="danger-btn" onclick="removeCategory('${t}')">EXCLUIR TREINO</button>
+                </div>`;
             state.routines[t].forEach((ex, i) => {
-                h += `<div style="border-bottom:1px solid #334155; padding:5px 0;">
-                    <input type="text" value="${ex.n}" id="n-${t}-${i}" class="edit-input">
+                h += `<div style="margin-top:15px; border-top:1px solid #334155; padding-top:10px;">
+                    <input type="text" value="${ex.n}" onchange="state.routines['${t}'][${i}].n=this.value" class="edit-input" placeholder="Nome">
                     <div style="display:flex; gap:5px;">
-                        <input type="number" value="${ex.s}" id="s-${t}-${i}" class="edit-input">
-                        <input type="text" value="${ex.r}" id="r-${t}-${i}" class="edit-input">
-                        <input type="number" value="${ex.d}" id="d-${t}-${i}" class="edit-input">
+                        <input type="number" value="${ex.s}" onchange="state.routines['${t}'][${i}].s=parseInt(this.value)" class="edit-input" placeholder="Sets">
+                        <input type="text" value="${ex.r}" onchange="state.routines['${t}'][${i}].r=this.value" class="edit-input" placeholder="Reps">
+                        <input type="number" value="${ex.d}" onchange="state.routines['${t}'][${i}].d=parseInt(this.value)" class="edit-input" placeholder="Rest">
                     </div>
                 </div>`;
             });
-            h += `</div>`;
+            h += `<button class="sel-btn" style="margin-top:10px; width:100%; border-style:dashed;" onclick="addEx('${t}')">+ Adicionar Exercício</button></div>`;
         }
         document.getElementById('edit-lists').innerHTML = h;
     }
 
     function saveAll() {
-        // Lógica de salvamento das edições
-        for (let t in state.routines) {
-            state.routines[t].forEach((ex, i) => {
-                ex.n = document.getElementById(`n-${t}-${i}`).value;
-                ex.s = parseInt(document.getElementById(`s-${t}-${i}`).value);
-                ex.r = document.getElementById(`r-${t}-${i}`).value;
-                ex.d = parseInt(document.getElementById(`d-${t}-${i}`).value);
-            });
-        }
-        localStorage.setItem('workoutV25', JSON.stringify(state));
-        alert("Salvo!"); showView('today');
+        localStorage.setItem('workoutV26', JSON.stringify(state));
+        alert("Planilha de treinos atualizada!");
+        showView('today');
     }
 
     function renderHistory() {

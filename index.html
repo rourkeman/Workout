@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Workout OS v29F</title>
+    <title>Workout OS v30 (Bio-Linked)</title>
     <style>
         :root { --primary: #3b82f6; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #22c55e; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; touch-action: manipulation; }
@@ -15,12 +15,16 @@
         .view.active { display: block; }
         .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #334155; }
         
+        /* Time Selector Styles */
+        .time-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; background: #0f172a; padding: 10px; border-radius: 8px; }
+        .time-box label { font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 4px; }
+        .time-input { width: 100%; background: #1e293b; border: 1px solid #475569; color: white; padding: 8px; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; }
+
         .selector-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; }
         .selector-scroll::-webkit-scrollbar { display: none; }
         .sel-btn { flex: 0 0 auto; padding: 12px 20px; border-radius: 20px; border: 2px solid var(--primary); background: #1e293b; color: white; cursor: pointer; font-weight: bold; font-size: 0.75rem; white-space: nowrap; }
         .sel-btn.active { background: var(--primary); box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
 
-        /* Bolinhas de Input v27 */
         .set-input { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #475569; background: #0f172a; color: white; text-align: center; font-weight: bold; font-size: 1rem; margin: 4px; outline: none; transition: 0.3s; -moz-appearance: textfield; }
         .set-input::-webkit-inner-spin-button, .set-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         .set-input:focus { border-color: var(--primary); background: #1e293b; }
@@ -54,7 +58,19 @@
 
 <div class="container">
     <div id="view-today" class="view active">
-        <div id="workout-selector" class="selector-scroll"></div>
+        <div class="card">
+            <div class="time-box">
+                <div>
+                    <label>Início do Treino</label>
+                    <input type="datetime-local" id="t-start" class="time-input">
+                </div>
+                <div>
+                    <label>Fim do Treino</label>
+                    <input type="datetime-local" id="t-end" class="time-input">
+                </div>
+            </div>
+            <div id="workout-selector" class="selector-scroll"></div>
+        </div>
         <div id="todayList"></div>
         <button id="finish-btn" class="btn-action" style="display:none" onclick="finishWorkout()">FINALIZAR SESSÃO</button>
     </div>
@@ -62,6 +78,16 @@
     <div id="view-cardio" class="view">
         <div class="card">
             <h3>ATIVIDADE AERÓBICA</h3>
+            <div class="time-box">
+                <div>
+                    <label>Início</label>
+                    <input type="datetime-local" id="c-start" class="time-input">
+                </div>
+                <div>
+                    <label>Fim</label>
+                    <input type="datetime-local" id="c-end" class="time-input">
+                </div>
+            </div>
             <div class="cardio-grid">
                 <button id="btn-RUN" class="active" onclick="setCardio('RUN')">RUN</button>
                 <button id="btn-BIKE" onclick="setCardio('BIKE')">BIKE</button>
@@ -70,8 +96,7 @@
                 <button id="btn-WALK" onclick="setCardio('WALK')">WALK</button>
             </div>
             <input type="number" id="c-dist" class="edit-input" placeholder="KM (opcional)">
-            <input type="text" id="c-time" class="edit-input" placeholder="Tempo (ex: 40min)">
-            <button class="btn-action" onclick="finishCardio()">REGISTRAR</button>
+            <button class="btn-action" onclick="finishCardio()">REGISTRAR CARDIO</button>
         </div>
     </div>
 
@@ -157,107 +182,4 @@
         if (state.currentSession[activeT][exerciseKey].length < newVal) {
             while(state.currentSession[activeT][exerciseKey].length < newVal) state.currentSession[activeT][exerciseKey].push("");
         }
-        localStorage.setItem('workoutV29', JSON.stringify(state));
-        renderToday();
-    }
-
-    function recordSet(exKey, setIdx, val, rest) {
-        state.currentSession[activeT][exKey][setIdx] = val;
-        localStorage.setItem('workoutV29', JSON.stringify(state));
-        if (val !== "") startTimer(rest);
-        renderToday();
-    }
-
-    function startTimer(s) {
-        clearInterval(timerInt);
-        document.getElementById('timer-bar').style.display = 'block';
-        timerInt = setInterval(() => {
-            s--;
-            let min = Math.floor(s/60), sec = s%60;
-            document.getElementById('timer-display').innerText = `${min}:${sec < 10 ? '0'+sec : sec}`;
-            if (s <= 0) stopTimer();
-        }, 1000);
-    }
-
-    function stopTimer() { clearInterval(timerInt); document.getElementById('timer-bar').style.display = 'none'; }
-
-    async function finishWorkout() {
-        const details = [];
-        state.routines[activeT].forEach((ex, idx) => {
-            const exerciseKey = `${activeT}_${idx}`;
-            const sets = (state.currentSession[activeT][exerciseKey] || []).filter(v => v !== "");
-            if (sets.length > 0) {
-                details.push({ name: ex.n, setsDone: sets.length, reps: sets.join("-") });
-            }
-        });
-        if (details.length === 0) return alert("Preencha algo!");
-        await send({ date: new Date().toLocaleString('pt-BR'), type: "TREINO ("+activeT+")", details: details });
-        state.currentSession[activeT] = {};
-        localStorage.setItem('workoutV29', JSON.stringify(state));
-    }
-
-    function setCardio(t) {
-        cardioType = t;
-        document.querySelectorAll('.cardio-grid button').forEach(b => b.classList.remove('active'));
-        document.getElementById('btn-'+t).classList.add('active');
-    }
-
-    async function finishCardio() {
-        const d = document.getElementById('c-dist').value;
-        const t = document.getElementById('c-time').value;
-        await send({ date: new Date().toLocaleString('pt-BR'), type: cardioType, dist: d ? d + " KM" : "Indoor", time: t });
-    }
-
-    async function send(p) {
-        state.history.unshift({date: p.date, type: p.type, data: p.dist || "Sessão"});
-        localStorage.setItem('workoutV29', JSON.stringify(state));
-        await fetch(GOOGLE_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(p) });
-        alert("Enviado!"); location.reload();
-    }
-
-    // --- CONFIGS v26 ---
-    function addNewCategory() {
-        const name = prompt("Nome do treino:");
-        if(name) { state.routines[name] = [{n:"Novo", s:3, r:"10", d:60}]; renderEdit(); }
-    }
-
-    function removeCategory(name) {
-        if(confirm("Excluir '"+name+"'?")) { delete state.routines[name]; renderEdit(); }
-    }
-
-    function addEx(cat) {
-        state.routines[cat].push({n:"Novo Exercício", s:3, r:"12", d:60});
-        renderEdit();
-    }
-
-    function renderEdit() {
-        let h = '';
-        for (let t in state.routines) {
-            h += `<div class="card" style="border-left: 4px solid var(--primary)">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h3 style="margin:0">${t}</h3>
-                    <button class="danger-btn" onclick="removeCategory('${t}')">EXCLUIR</button>
-                </div>`;
-            state.routines[t].forEach((ex, i) => {
-                h += `<div style="margin-top:10px; border-top:1px solid #334155; padding-top:10px;">
-                    <input type="text" value="${ex.n}" onchange="state.routines['${t}'][${i}].n=this.value" class="edit-input">
-                    <div style="display:flex; gap:5px;">
-                        <input type="number" value="${ex.s}" onchange="state.routines['${t}'][${i}].s=parseInt(this.value)" class="edit-input">
-                        <input type="text" value="${ex.r}" onchange="state.routines['${t}'][${i}].r=this.value" class="edit-input">
-                        <input type="number" value="${ex.d}" onchange="state.routines['${t}'][${i}].d=parseInt(this.value)" class="edit-input">
-                    </div>
-                </div>`;
-            });
-            h += `<button class="sel-btn" style="margin-top:10px; width:100%; border-style:dashed;" onclick="addEx('${t}')">+ Adicionar Exercício</button></div>`;
-        }
-        document.getElementById('edit-lists').innerHTML = h;
-    }
-
-    function saveAll() { localStorage.setItem('workoutV29', JSON.stringify(state)); alert("Salvo!"); showView('today'); }
-    function renderHistory() {
-        document.getElementById('historyList').innerHTML = state.history.slice(0,10).map(h => `<div class="card"><small>${h.date}</small><br><strong>${h.type}</strong>: ${h.data}</div>`).join('');
-    }
-    renderSelector();
-</script>
-</body>
-</html>
+        localStorage.setItem('workoutV29

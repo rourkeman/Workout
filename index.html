@@ -66,7 +66,7 @@
 </div>
 
 <script>
-    const GOOGLE_URL = "https://script.google.com/macros/s/AKfycby8NuU_VRM_6Iu0DW5SONB-EfNS0voGrZ3ljWaBDfP2OWK0gysYe5q6w1-UaxKwiYE9/exec"; 
+    const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbzOInwcSZxfks-5uRaNHXQdJFwOk1WKEPPNI0E0xS6XO3R4a6J_TnZKarYQ7tGUzQ/exec"; 
     let activeT = null;
     let timerInterval;
 
@@ -153,38 +153,82 @@
     }
 
     async function finishWorkout() {
-        const now = new Date();
-        const offset = now.getTimezoneOffset() * 60000;
-        document.getElementById('endTime').value = (new Date(now - offset)).toISOString().slice(0, 16);
+        const startInput = document.getElementById('startTime').value;
+        const endInput = document.getElementById('endTime').value;
+        
+        let startTime, endTime;
+
+        // AUTO-TIME LOGIC: If inputs are empty, use the last hour
+        if (!startInput || !endInput) {
+            const now = new Date();
+            const oneHourAgo = new Date(now.getTime() - (60 * 60 * 1000));
+            
+            // Format to ISO string for Google Fit compatibility
+            startTime = oneHourAgo.toISOString();
+            endTime = now.toISOString();
+        } else {
+            // MANUAL MODE: Use the values you typed in
+            startTime = new Date(startInput).toISOString();
+            endTime = new Date(endInput).toISOString();
+        }
+
         const details = [];
         state.routines[activeT].forEach((ex, idx) => {
             const exKey = `${activeT}_${idx}`;
             const sets = (state.currentSession[activeT][exKey] || []).filter(v => v !== "");
             if (sets.length > 0) details.push({ name: ex.n, setsDone: sets.length, reps: sets.join("-") });
         });
+
         const payload = {
             date: new Date().toLocaleString('pt-BR'),
-            startTime: document.getElementById('startTime').value,
-            endTime: document.getElementById('endTime').value,
+            startTime: startTime,
+            endTime: endTime,
             type: "TREINO ("+activeT+")",
             details: details
         };
-        await fetch(GOOGLE_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+
+        // Note: Changed 'no-cors' to 'cors' to ensure we see errors if they happen
+        await fetch(GOOGLE_URL, { method: 'POST', body: JSON.stringify(payload) });
+        
         state.currentSession[activeT] = {};
         localStorage.setItem('workoutV30', JSON.stringify(state));
+        alert("Treino registrado com sucesso!");
         location.reload();
     }
 
     async function finishCardio() {
+        const startInput = document.getElementById('startTime').value;
+        const endInput = document.getElementById('endTime').value;
+        
+        let startTime, endTime;
+
+        // AUTO-TIME LOGIC: Use last 60 mins if boxes are empty
+        if (!startInput || !endInput) {
+            const now = new Date();
+            const oneHourAgo = new Date(now.getTime() - (60 * 60 * 1000));
+            
+            startTime = oneHourAgo.toISOString();
+            endTime = now.toISOString();
+        } else {
+            // MANUAL MODE: Use the specific back-fill times
+            startTime = new Date(startInput).toISOString();
+            endTime = new Date(endInput).toISOString();
+        }
+
         const payload = {
             date: new Date().toLocaleString('pt-BR'),
-            startTime: document.getElementById('startTime').value,
-            endTime: new Date().toISOString(),
+            startTime: startTime,
+            endTime: endTime,
             type: "CARDIO",
+            // Combining Activity + Dist into the Exercise column
             dist: document.getElementById('c-type').value + " - " + document.getElementById('c-dist').value,
             time: document.getElementById('c-time').value
         };
-        await fetch(GOOGLE_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+
+        // Sending to Google Apps Script
+        await fetch(GOOGLE_URL, { method: 'POST', body: JSON.stringify(payload) });
+        
+        alert("Cardio registrado com sucesso!");
         location.reload();
     }
 

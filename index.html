@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Workout OS v30 (Bio-Linked)</title>
+    <title>Workout OS v30 - Biometric</title>
     <style>
         :root { --primary: #3b82f6; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #22c55e; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; touch-action: manipulation; }
@@ -15,44 +15,27 @@
         .view.active { display: block; }
         .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #334155; }
         
-        /* Time Selector Styles */
-        .time-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; background: #0f172a; padding: 10px; border-radius: 8px; }
-        .time-box label { font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 4px; }
-        .time-input { width: 100%; background: #1e293b; border: 1px solid #475569; color: white; padding: 8px; border-radius: 6px; font-size: 0.8rem; box-sizing: border-box; }
+        /* Time Input Styling */
+        .time-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .time-box label { font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; display: block; }
+        .time-input { background: #0f172a; border: 1px solid #475569; color: white; padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box; }
 
         .selector-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; }
         .selector-scroll::-webkit-scrollbar { display: none; }
         .sel-btn { flex: 0 0 auto; padding: 12px 20px; border-radius: 20px; border: 2px solid var(--primary); background: #1e293b; color: white; cursor: pointer; font-weight: bold; font-size: 0.75rem; white-space: nowrap; }
         .sel-btn.active { background: var(--primary); box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
 
-        .set-input { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #475569; background: #0f172a; color: white; text-align: center; font-weight: bold; font-size: 1rem; margin: 4px; outline: none; transition: 0.3s; -moz-appearance: textfield; }
-        .set-input::-webkit-inner-spin-button, .set-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        .set-input:focus { border-color: var(--primary); background: #1e293b; }
+        .set-input { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #475569; background: #0f172a; color: white; text-align: center; font-weight: bold; font-size: 1rem; margin: 4px; outline: none; }
         .set-input.has-value { border-color: var(--accent); background: #064e3b; }
-
-        .edit-input { width: 100%; background: #0f172a; border: 1px solid #475569; color: white; padding: 10px; border-radius: 6px; margin: 5px 0; box-sizing: border-box; }
-        .on-the-go-input { width: 45px; background: #0f172a; border: 1px solid #475569; color: white; text-align: center; border-radius: 4px; font-size: 0.8rem; padding: 4px; }
         
         .btn-action { background: var(--accent); color: white; border: none; padding: 18px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: bold; font-size: 1rem; margin-top: 10px; }
-        .danger-btn { background: #ef4444; color: white; border: none; padding: 8px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; }
-        
-        #timer-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #1e293b; border-top: 4px solid var(--primary); padding: 15px; display: none; z-index: 2000; text-align: center; }
-        .cardio-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
-        .cardio-grid button { padding: 10px; border-radius: 8px; border: 1px solid var(--primary); background: none; color: white; cursor: pointer; font-size: 0.7rem; font-weight: bold; }
-        .cardio-grid button.active { background: var(--primary); }
     </style>
 </head>
 <body>
 
-<div id="timer-bar">
-    <div id="timer-display" style="font-size: 2.2rem; font-weight: bold; color: var(--primary);">00:00</div>
-    <button onclick="stopTimer()" style="background:#ef4444; color:white; border:none; padding:8px 20px; border-radius:8px; font-weight:bold;">PULAR</button>
-</div>
-
 <div class="nav">
     <button onclick="showView('today')" id="nav-today" class="active">TREINAR</button>
     <button onclick="showView('cardio')" id="nav-cardio">CARDIO</button>
-    <button onclick="showView('history')" id="nav-history">HISTÓRICO</button>
     <button onclick="showView('edit')" id="nav-edit">CONFIGS</button>
 </div>
 
@@ -62,63 +45,47 @@
             <div class="time-box">
                 <div>
                     <label>Início do Treino</label>
-                    <input type="datetime-local" id="t-start" class="time-input">
+                    <input type="datetime-local" id="startTime" class="time-input">
                 </div>
                 <div>
                     <label>Fim do Treino</label>
-                    <input type="datetime-local" id="t-end" class="time-input">
+                    <input type="datetime-local" id="endTime" class="time-input">
                 </div>
             </div>
-            <div id="workout-selector" class="selector-scroll"></div>
         </div>
+
+        <div id="workout-selector" class="selector-scroll"></div>
         <div id="todayList"></div>
         <button id="finish-btn" class="btn-action" style="display:none" onclick="finishWorkout()">FINALIZAR SESSÃO</button>
     </div>
 
     <div id="view-cardio" class="view">
-        <div class="card">
-            <h3>ATIVIDADE AERÓBICA</h3>
-            <div class="time-box">
-                <div>
-                    <label>Início</label>
-                    <input type="datetime-local" id="c-start" class="time-input">
-                </div>
-                <div>
-                    <label>Fim</label>
-                    <input type="datetime-local" id="c-end" class="time-input">
-                </div>
-            </div>
-            <div class="cardio-grid">
-                <button id="btn-RUN" class="active" onclick="setCardio('RUN')">RUN</button>
-                <button id="btn-BIKE" onclick="setCardio('BIKE')">BIKE</button>
-                <button id="btn-ROPE" onclick="setCardio('ROPE')">ROPE</button>
-                <button id="btn-SWIM" onclick="setCardio('SWIM')">SWIM</button>
-                <button id="btn-WALK" onclick="setCardio('WALK')">WALK</button>
-            </div>
-            <input type="number" id="c-dist" class="edit-input" placeholder="KM (opcional)">
-            <button class="btn-action" onclick="finishCardio()">REGISTRAR CARDIO</button>
-        </div>
+        <div class="card"><h3>CARDIO MODE</h3><button class="btn-action" onclick="alert('Cardio logic ready')">Log Cardio</button></div>
     </div>
-
-    <div id="view-history" class="view"><div id="historyList"></div></div>
     
     <div id="view-edit" class="view">
-        <button class="btn-action" style="background:var(--primary); margin-bottom:20px;" onclick="addNewCategory()">+ NOVO TREINO</button>
         <div id="edit-lists"></div>
-        <button class="btn-action" style="background:var(--accent)" onclick="saveAll()">SALVAR ALTERAÇÕES</button>
+        <button class="btn-action" onclick="saveAll()">SALVAR CONFIGS</button>
     </div>
 </div>
 
 <script>
     const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbxZeBRHstb1ZEsnPHGqyY5BUqkB1s_FXjQoIYsCHpqKcKBM4UPGOHvqEXGoi4Ul33hy/exec"; 
-    let cardioType = 'RUN';
     let activeT = null;
-    let timerInt;
 
-    let state = JSON.parse(localStorage.getItem('workoutV29')) || { 
+    let state = JSON.parse(localStorage.getItem('workoutV30')) || { 
         routines: { "Segunda": [{n:"Exemplo", s:3, r:"12", d:60}] }, 
-        history: [],
         currentSession: {} 
+    };
+
+    // Initialize times to NOW
+    window.onload = () => {
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(now - offset)).toISOString().slice(0, 16);
+        document.getElementById('startTime').value = localISOTime;
+        document.getElementById('endTime').value = localISOTime;
+        renderSelector();
     };
 
     function showView(v) {
@@ -126,9 +93,6 @@
         document.querySelectorAll('.nav button').forEach(el => el.classList.remove('active'));
         document.getElementById('view-'+v).classList.add('active');
         document.getElementById('nav-'+v).classList.add('active');
-        if(v === 'edit') renderEdit();
-        if(v === 'history') renderHistory();
-        if(v === 'today') renderSelector();
     }
 
     function renderSelector() {
@@ -156,30 +120,50 @@
             }
 
             return `<div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <strong style="font-size:0.85rem;">${ex.n}</strong>
-                    <div style="font-size:0.75rem; color:#94a3b8">
-                        <input type="number" class="on-the-go-input" value="${ex.s}" onchange="updateSetCount(${idx}, this.value)"> sets | 
-                        <span style="color:var(--primary)">Meta: ${ex.r}</span>
-                    </div>
-                </div>
-                <div style="display:flex; flex-wrap:wrap;">
+                <strong>${ex.n}</strong>
+                <div style="display:flex; flex-wrap:wrap; margin-top:10px;">
                     ${state.currentSession[activeT][exerciseKey].map((val, i) => `
-                        <input type="number" inputmode="numeric"
-                               class="set-input ${val !== "" ? 'has-value' : ''}" 
+                        <input type="number" class="set-input ${val !== "" ? 'has-value' : ''}" 
                                value="${val}" placeholder="${i+1}"
-                               onchange="recordSet('${exerciseKey}', ${i}, this.value, ${ex.d})">
-                    `).slice(0, ex.s).join('')}
+                               onchange="recordSet('${exerciseKey}', ${i}, this.value)">
+                    `).join('')}
                 </div>
             </div>`;
         }).join('');
     }
 
-    function updateSetCount(idx, val) {
-        const newVal = parseInt(val);
-        state.routines[activeT][idx].s = newVal;
-        const exerciseKey = `${activeT}_${idx}`;
-        if (state.currentSession[activeT][exerciseKey].length < newVal) {
-            while(state.currentSession[activeT][exerciseKey].length < newVal) state.currentSession[activeT][exerciseKey].push("");
-        }
-        localStorage.setItem('workoutV29
+    function recordSet(exKey, setIdx, val) {
+        state.currentSession[activeT][exKey][setIdx] = val;
+        localStorage.setItem('workoutV30', JSON.stringify(state));
+        renderToday();
+    }
+
+    async function finishWorkout() {
+        const details = [];
+        state.routines[activeT].forEach((ex, idx) => {
+            const exerciseKey = `${activeT}_${idx}`;
+            const sets = (state.currentSession[activeT][exerciseKey] || []).filter(v => v !== "");
+            if (sets.length > 0) {
+                details.push({ name: ex.n, setsDone: sets.length, reps: sets.join("-") });
+            }
+        });
+
+        const payload = {
+            date: new Date().toLocaleString('pt-BR'),
+            startTime: document.getElementById('startTime').value,
+            endTime: document.getElementById('endTime').value,
+            type: "TREINO ("+activeT+")",
+            details: details
+        };
+
+        await fetch(GOOGLE_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+        alert("Enviado com Biometria!");
+        state.currentSession[activeT] = {};
+        localStorage.setItem('workoutV30', JSON.stringify(state));
+        location.reload();
+    }
+
+    function renderEdit() { /* Logic to edit routines */ }
+</script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Workout OS v30 - Biometric</title>
+    <title>Workout OS v30 - Full Edition</title>
     <style>
         :root { --primary: #3b82f6; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #22c55e; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; touch-action: manipulation; }
@@ -15,10 +15,9 @@
         .view.active { display: block; }
         .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #334155; }
         
-        /* Time Input Styling */
-        .time-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .time-box label { font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; display: block; }
-        .time-input { background: #0f172a; border: 1px solid #475569; color: white; padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box; }
+        .time-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .time-box label { font-size: 0.6rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; display: block; }
+        .time-input { background: #0f172a; border: 1px solid #475569; color: white; padding: 8px; border-radius: 6px; width: 100%; font-size: 0.8rem; box-sizing: border-box; }
 
         .selector-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; }
         .selector-scroll::-webkit-scrollbar { display: none; }
@@ -28,7 +27,9 @@
         .set-input { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #475569; background: #0f172a; color: white; text-align: center; font-weight: bold; font-size: 1rem; margin: 4px; outline: none; }
         .set-input.has-value { border-color: var(--accent); background: #064e3b; }
         
+        .edit-input { width: 100%; background: #0f172a; border: 1px solid #475569; color: white; padding: 10px; border-radius: 6px; margin: 5px 0; box-sizing: border-box; }
         .btn-action { background: var(--accent); color: white; border: none; padding: 18px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: bold; font-size: 1rem; margin-top: 10px; }
+        .danger-btn { background: #ef4444; color: white; border: none; padding: 8px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -43,29 +44,29 @@
     <div id="view-today" class="view active">
         <div class="card">
             <div class="time-box">
-                <div>
-                    <label>Início do Treino</label>
-                    <input type="datetime-local" id="startTime" class="time-input">
-                </div>
-                <div>
-                    <label>Fim do Treino</label>
-                    <input type="datetime-local" id="endTime" class="time-input">
-                </div>
+                <div><label>Start Time</label><input type="datetime-local" id="startTime" class="time-input"></div>
+                <div><label>End Time</label><input type="datetime-local" id="endTime" class="time-input"></div>
             </div>
         </div>
-
         <div id="workout-selector" class="selector-scroll"></div>
         <div id="todayList"></div>
         <button id="finish-btn" class="btn-action" style="display:none" onclick="finishWorkout()">FINALIZAR SESSÃO</button>
     </div>
 
     <div id="view-cardio" class="view">
-        <div class="card"><h3>CARDIO MODE</h3><button class="btn-action" onclick="alert('Cardio logic ready')">Log Cardio</button></div>
+        <div class="card">
+            <h3>CARDIO SESSION</h3>
+            <input type="text" id="c-type" class="edit-input" placeholder="Type (Run, Bike, etc.)">
+            <input type="text" id="c-dist" class="edit-input" placeholder="Distance/Info">
+            <input type="text" id="c-time" class="edit-input" placeholder="Duration (e.g. 30min)">
+            <button class="btn-action" onclick="finishCardio()">LOG CARDIO</button>
+        </div>
     </div>
     
     <div id="view-edit" class="view">
+        <button class="btn-action" style="background:var(--primary)" onclick="addNewCategory()">+ NOVO TREINO</button>
         <div id="edit-lists"></div>
-        <button class="btn-action" onclick="saveAll()">SALVAR CONFIGS</button>
+        <button class="btn-action" onclick="saveAll()">SALVAR ALTERAÇÕES</button>
     </div>
 </div>
 
@@ -74,17 +75,16 @@
     let activeT = null;
 
     let state = JSON.parse(localStorage.getItem('workoutV30')) || { 
-        routines: { "Segunda": [{n:"Exemplo", s:3, r:"12", d:60}] }, 
+        routines: { "Exemplo": [{n:"Supino", s:3, r:"12", d:60}] }, 
         currentSession: {} 
     };
 
-    // Initialize times to NOW
     window.onload = () => {
         const now = new Date();
         const offset = now.getTimezoneOffset() * 60000;
-        const localISOTime = (new Date(now - offset)).toISOString().slice(0, 16);
-        document.getElementById('startTime').value = localISOTime;
-        document.getElementById('endTime').value = localISOTime;
+        const localTime = (new Date(now - offset)).toISOString().slice(0, 16);
+        document.getElementById('startTime').value = localTime;
+        document.getElementById('endTime').value = localTime;
         renderSelector();
     };
 
@@ -93,6 +93,7 @@
         document.querySelectorAll('.nav button').forEach(el => el.classList.remove('active'));
         document.getElementById('view-'+v).classList.add('active');
         document.getElementById('nav-'+v).classList.add('active');
+        if(v === 'edit') renderEdit();
     }
 
     function renderSelector() {
@@ -114,18 +115,15 @@
         if(!activeT) return;
         const container = document.getElementById('todayList');
         container.innerHTML = state.routines[activeT].map((ex, idx) => {
-            const exerciseKey = `${activeT}_${idx}`;
-            if (!state.currentSession[activeT][exerciseKey]) {
-                state.currentSession[activeT][exerciseKey] = Array(parseInt(ex.s)).fill("");
-            }
-
+            const exKey = `${activeT}_${idx}`;
+            if (!state.currentSession[activeT][exKey]) state.currentSession[activeT][exKey] = Array(parseInt(ex.s)).fill("");
             return `<div class="card">
                 <strong>${ex.n}</strong>
                 <div style="display:flex; flex-wrap:wrap; margin-top:10px;">
-                    ${state.currentSession[activeT][exerciseKey].map((val, i) => `
+                    ${state.currentSession[activeT][exKey].map((val, i) => `
                         <input type="number" class="set-input ${val !== "" ? 'has-value' : ''}" 
                                value="${val}" placeholder="${i+1}"
-                               onchange="recordSet('${exerciseKey}', ${i}, this.value)">
+                               onchange="recordSet('${exKey}', ${i}, this.value)">
                     `).join('')}
                 </div>
             </div>`;
@@ -139,13 +137,15 @@
     }
 
     async function finishWorkout() {
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+        document.getElementById('endTime').value = (new Date(now - offset)).toISOString().slice(0, 16);
+
         const details = [];
         state.routines[activeT].forEach((ex, idx) => {
-            const exerciseKey = `${activeT}_${idx}`;
-            const sets = (state.currentSession[activeT][exerciseKey] || []).filter(v => v !== "");
-            if (sets.length > 0) {
-                details.push({ name: ex.n, setsDone: sets.length, reps: sets.join("-") });
-            }
+            const exKey = `${activeT}_${idx}`;
+            const sets = (state.currentSession[activeT][exKey] || []).filter(v => v !== "");
+            if (sets.length > 0) details.push({ name: ex.n, setsDone: sets.length, reps: sets.join("-") });
         });
 
         const payload = {
@@ -163,7 +163,58 @@
         location.reload();
     }
 
-    function renderEdit() { /* Logic to edit routines */ }
+    async function finishCardio() {
+        const payload = {
+            date: new Date().toLocaleString('pt-BR'),
+            startTime: document.getElementById('startTime').value, // Uses the same start time
+            endTime: new Date().toISOString(),
+            type: "CARDIO: " + document.getElementById('c-type').value,
+            dist: document.getElementById('c-dist').value,
+            time: document.getElementById('c-time').value
+        };
+        await fetch(GOOGLE_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+        alert("Cardio Enviado!");
+        location.reload();
+    }
+
+    // --- CONFIGS FIX ---
+    function addNewCategory() {
+        const name = prompt("Nome do treino:");
+        if(name) { state.routines[name] = [{n:"Novo", s:3, r:"10", d:60}]; renderEdit(); }
+    }
+
+    function removeCategory(name) {
+        if(confirm("Excluir '"+name+"'?")) { delete state.routines[name]; renderEdit(); }
+    }
+
+    function addEx(cat) {
+        state.routines[cat].push({n:"Novo Exercício", s:3, r:"12", d:60});
+        renderEdit();
+    }
+
+    function renderEdit() {
+        let h = '';
+        for (let t in state.routines) {
+            h += `<div class="card" style="border-left: 4px solid var(--primary)">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="margin:0">${t}</h3>
+                    <button class="danger-btn" onclick="removeCategory('${t}')">EXCLUIR</button>
+                </div>`;
+            state.routines[t].forEach((ex, i) => {
+                h += `<div style="margin-top:10px; border-top:1px solid #334155; padding-top:10px;">
+                    <input type="text" value="${ex.n}" onchange="state.routines['${t}'][${i}].n=this.value" class="edit-input" placeholder="Nome">
+                    <div style="display:flex; gap:5px;">
+                        <input type="number" value="${ex.s}" onchange="state.routines['${t}'][${i}].s=parseInt(this.value)" class="edit-input" placeholder="Sets">
+                        <input type="text" value="${ex.r}" onchange="state.routines['${t}'][${i}].r=this.value" class="edit-input" placeholder="Reps">
+                    </div>
+                </div>`;
+            });
+            h += `<button class="sel-btn" style="margin-top:10px; width:100%; border-style:dashed;" onclick="addEx('${t}')">+ Adicionar Exercício</button></div>`;
+        }
+        document.getElementById('edit-lists').innerHTML = h;
+    }
+
+    function saveAll() { localStorage.setItem('workoutV30', JSON.stringify(state)); alert("Salvo!"); renderSelector(); showView('today'); }
 </script>
 </body>
 </html>

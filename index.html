@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Workout OS v30.3 - Fixed All</title>
+    <title>Workout OS - Manual Edition</title>
     <style>
         :root { --primary: #3b82f6; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #22c55e; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; touch-action: manipulation; }
@@ -13,8 +13,6 @@
         .container { padding: 15px; max-width: 600px; margin: 0 auto; padding-bottom: 140px; }
         .view { display: none; } .view.active { display: block; }
         .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #334155; }
-        .time-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .time-input { background: #0f172a; border: 1px solid #475569; color: white; padding: 8px; border-radius: 6px; width: 100%; box-sizing: border-box; font-size: 0.8rem; }
         .selector-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 15px; }
         .sel-btn { flex: 0 0 auto; padding: 12px 20px; border-radius: 20px; border: 2px solid var(--primary); background: #1e293b; color: white; font-weight: bold; font-size: 0.75rem; }
         .sel-btn.active { background: var(--primary); }
@@ -37,12 +35,6 @@
 
 <div class="container">
     <div id="view-today" class="view active">
-        <div class="card">
-            <div class="time-box">
-                <div><label style="font-size: 0.6rem; color: #94a3b8;">START</label><input type="datetime-local" id="startTime" class="time-input"></div>
-                <div><label style="font-size: 0.6rem; color: #94a3b8;">END</label><input type="datetime-local" id="endTime" class="time-input"></div>
-            </div>
-        </div>
         <div id="workout-selector" class="selector-scroll"></div>
         <div id="todayList"></div>
         <button id="finish-btn" class="btn-action" style="display:none" onclick="finishWorkout()">FINALIZAR SESSÃO</button>
@@ -66,7 +58,9 @@
 </div>
 
 <script>
-    const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbzOInwcSZxfks-5uRaNHXQdJFwOk1WKEPPNI0E0xS6XO3R4a6J_TnZKarYQ7tGUzQ/exec"; 
+    // PASTE YOUR NEW DEPLOYMENT URL HERE
+    const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbykCx6mId5S3fxXQJTlfkDDRqRBaK3oFIk-30eguLzsmzBAFLD0hJJfFBdOND09ieYK/exec"; 
+    
     let activeT = null;
     let timerInterval;
 
@@ -75,14 +69,7 @@
         currentSession: {} 
     };
 
-    window.onload = () => {
-        const now = new Date();
-        const offset = now.getTimezoneOffset() * 60000;
-        const local = (new Date(now - offset)).toISOString().slice(0, 16);
-        document.getElementById('startTime').value = local;
-        document.getElementById('endTime').value = local;
-        renderSelector();
-    };
+    window.onload = () => { renderSelector(); };
 
     function showView(v) {
         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -153,25 +140,6 @@
     }
 
     async function finishWorkout() {
-        const startInput = document.getElementById('startTime').value;
-        const endInput = document.getElementById('endTime').value;
-        
-        let startTime, endTime;
-
-        // AUTO-TIME LOGIC: If inputs are empty, use the last hour
-        if (!startInput || !endInput) {
-            const now = new Date();
-            const oneHourAgo = new Date(now.getTime() - (60 * 60 * 1000));
-            
-            // Format to ISO string for Google Fit compatibility
-            startTime = oneHourAgo.toISOString();
-            endTime = now.toISOString();
-        } else {
-            // MANUAL MODE: Use the values you typed in
-            startTime = new Date(startInput).toISOString();
-            endTime = new Date(endInput).toISOString();
-        }
-
         const details = [];
         state.routines[activeT].forEach((ex, idx) => {
             const exKey = `${activeT}_${idx}`;
@@ -181,54 +149,26 @@
 
         const payload = {
             date: new Date().toLocaleString('pt-BR'),
-            startTime: startTime,
-            endTime: endTime,
             type: "TREINO ("+activeT+")",
             details: details
         };
-
-        // Note: Changed 'no-cors' to 'cors' to ensure we see errors if they happen
-        await fetch(GOOGLE_URL, { method: 'POST', body: JSON.stringify(payload) });
         
+        await fetch(GOOGLE_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
         state.currentSession[activeT] = {};
         localStorage.setItem('workoutV30', JSON.stringify(state));
-        alert("Treino registrado com sucesso!");
+        alert("Treino salvo!");
         location.reload();
     }
 
     async function finishCardio() {
-        const startInput = document.getElementById('startTime').value;
-        const endInput = document.getElementById('endTime').value;
-        
-        let startTime, endTime;
-
-        // AUTO-TIME LOGIC: Use last 60 mins if boxes are empty
-        if (!startInput || !endInput) {
-            const now = new Date();
-            const oneHourAgo = new Date(now.getTime() - (60 * 60 * 1000));
-            
-            startTime = oneHourAgo.toISOString();
-            endTime = now.toISOString();
-        } else {
-            // MANUAL MODE: Use the specific back-fill times
-            startTime = new Date(startInput).toISOString();
-            endTime = new Date(endInput).toISOString();
-        }
-
         const payload = {
             date: new Date().toLocaleString('pt-BR'),
-            startTime: startTime,
-            endTime: endTime,
             type: "CARDIO",
-            // Combining Activity + Dist into the Exercise column
             dist: document.getElementById('c-type').value + " - " + document.getElementById('c-dist').value,
             time: document.getElementById('c-time').value
         };
-
-        // Sending to Google Apps Script
-        await fetch(GOOGLE_URL, { method: 'POST', body: JSON.stringify(payload) });
-        
-        alert("Cardio registrado com sucesso!");
+        await fetch(GOOGLE_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+        alert("Cardio salvo!");
         location.reload();
     }
 
@@ -257,7 +197,7 @@
         }
         document.getElementById('edit-lists').innerHTML = h;
     }
-    function saveAll() { localStorage.setItem('workoutV30', JSON.stringify(state)); alert("Configurações Salvas!"); location.reload(); }
+    function saveAll() { localStorage.setItem('workoutV30', JSON.stringify(state)); alert("Salvo!"); location.reload(); }
 </script>
 </body>
 </html>
